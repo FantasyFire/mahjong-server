@@ -6,7 +6,8 @@ var MahjongTable = function (config) {
     TurnBasedGame.call(this);
     let defaultConfig = {
         needPlayerCount: 4,
-        cards: [11,11,11,11,12,12,12,12,13,13,13,13,14,14,14,14,15,15,15,15,16,16,16,16,17,17,17,17,18,18,18,18,19,19,19,19,31,31,31,31,32,32,32,32,33,33,33,33,34,34,34,34,35,35,35,35,36,36,36,36,37,37,37,37,38,38,38,38,39,39,39,39,51,51,51,51,52,52,52,52,53,53,53,53,54,54,54,54,55,55,55,55,56,56,56,56,57,57,57,57,58,58,58,58,59,59,59,59,70,70,70,70,73,73,73,73,76,76,76,76,79,79,79,79,90,90,90,90,93,93,93,93,96,96,96,96]
+        cards: [11,11,11,11,12,12,12,12,13,13,13,13,14,14,14,14,15,15,15,15,16,16,16,16,17,17,17,17,18,18,18,18,19,19,19,19,31,31,31,31,32,32,32,32,33,33,33,33,34,34,34,34,35,35,35,35,36,36,36,36,37,37,37,37,38,38,38,38,39,39,39,39,51,51,51,51,52,52,52,52,53,53,53,53,54,54,54,54,55,55,55,55,56,56,56,56,57,57,57,57,58,58,58,58,59,59,59,59,70,70,70,70,73,73,73,73,76,76,76,76,79,79,79,79,90,90,90,90,93,93,93,93,96,96,96,96],
+        handCardCount: 13
     };
     this.config = Object.assign(defaultConfig, config || {});
 };
@@ -70,10 +71,36 @@ p._resetCards = function () {
     this.cardCount = this.cards.length;
 };
 
+/**
+ * 重置单局玩家数据
+ */
+p._resetPlayerData = function () {
+    for (let player in this.playerData) {
+        let pd = this.playerData[player];
+        pd.handCards = [];
+        pd.groupCards = [];
+    }
+};
+
+/**
+ * 分配卡牌
+ */
+p._allocateCards = function () {
+    let i;
+    for (i=0; i<this.config.handCardCount; i++) {
+        for (let player in this.playerData) {
+            this.playerData[player].handCards.push(this._getTop());
+        }
+    }
+};
+
 // 实现Game的接口
 p.joinIn = function (player) {
     let exist = this.playerSequence.includes(player);
-    !exist && this.playerSequence.push(player);
+    if (!exist) {
+        this.playerSequence.push(player);
+        this.playerData[player] = {};
+    }
     return !exist;
 };
 p.canStart = function () {
@@ -81,6 +108,8 @@ p.canStart = function () {
 };
 p.gameStart = function () {
     this._resetCards();
+    this._resetPlayerData();
+    this._allocateCards();
 
     return true;
 };
