@@ -1,11 +1,11 @@
 var Game = function () {
     this.playerSequence = [];
-    this.playerData = {};
+    this.playerDatas = {};
 };
 
 var p = Game.prototype;
 
-p.joinIn = function (player) {
+p.joinIn = function (playerId) {
     console.error('接口joinIn未实现 in Game.joinIn');
     return false;
 };

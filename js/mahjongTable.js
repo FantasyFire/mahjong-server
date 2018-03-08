@@ -15,6 +15,7 @@ var MahjongTable = function (config) {
 var p = MahjongTable.prototype;
 
 p.reset = function () {
+    TurnBasedGame.prototype.reset.apply(this);
 };
 
 // 私有接口
@@ -75,8 +76,8 @@ p._resetCards = function () {
  * 重置单局玩家数据
  */
 p._resetPlayerData = function () {
-    for (let player in this.playerData) {
-        let pd = this.playerData[player];
+    for (let playerId in this.playerDatas) {
+        let pd = this.playerDatas[playerId];
         pd.handCards = [];
         pd.groupCards = [];
     }
@@ -88,18 +89,27 @@ p._resetPlayerData = function () {
 p._allocateCards = function () {
     let i;
     for (i=0; i<this.config.handCardCount; i++) {
-        for (let player in this.playerData) {
-            this.playerData[player].handCards.push(this._getTop());
+        for (let playerId in this.playerDatas) {
+            this.playerDatas[playerId].handCards.push(this._getTop());
         }
     }
 };
 
+/**
+ * 玩家抽卡
+ * @param {String} playerId - 玩家id
+ */
+p._drawCard = function (playerId) {
+    this.playerDatas[playerId].newCard = this._getTop();
+    // todo: 广播抽卡信息
+};
+
 // 实现Game的接口
-p.joinIn = function (player) {
-    let exist = this.playerSequence.includes(player);
+p.joinIn = function (playerId) {
+    let exist = this.playerSequence.includes(playerId);
     if (!exist) {
-        this.playerSequence.push(player);
-        this.playerData[player] = {};
+        this.playerSequence.push(playerId);
+        this.playerDatas[playerId] = {};
     }
     return !exist;
 };
@@ -107,9 +117,16 @@ p.canStart = function () {
     return this.playerSequence.length == this.config.needPlayerCount;
 };
 p.gameStart = function () {
+    // todo: 修改游戏数据
+    // todo: 重置单局数据
     this._resetCards();
     this._resetPlayerData();
+    // todo: 开始新一局
     this._allocateCards();
+
+    this._drawCard(this.currentPlayerId);
+
+    // todo: 进入等待当前玩家动作状态
 
     return true;
 };
