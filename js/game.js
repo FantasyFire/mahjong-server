@@ -1,5 +1,6 @@
 var Game = function () {
     this.playerSequence = [];
+    this.playerData = {};
 };
 
 var p = Game.prototype;
