@@ -1,6 +1,6 @@
 const co = require('co');
 const MahjongRoom = require('./js/mahjongRoom');
-const MahjongGame = require('./js/mahjongTable');
+const MahjongGame = require('./js/mahjongGame');
 
 var room = new MahjongRoom('1000', MahjongGame);
 

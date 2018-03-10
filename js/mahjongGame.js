@@ -2,7 +2,7 @@ const GU = require('./gameUtils.js');
 const TurnBasedGame = require('./turn-based.js');
 const util = require('util');
 
-var MahjongTable = function (config) {
+var MahjongGame = function (config) {
     TurnBasedGame.call(this);
     let defaultConfig = {
         needPlayerCount: 4,
@@ -12,7 +12,7 @@ var MahjongTable = function (config) {
     this.config = Object.assign(defaultConfig, config || {});
 };
 
-var p = MahjongTable.prototype;
+var p = MahjongGame.prototype;
 
 p.reset = function () {
     TurnBasedGame.prototype.reset.apply(this);
@@ -139,6 +139,6 @@ p.start = function () {
     });
 };
 
-util.inherits(MahjongTable, TurnBasedGame);
+util.inherits(MahjongGame, TurnBasedGame);
 
-module.exports = config => new MahjongTable(config);
+module.exports = MahjongGame;

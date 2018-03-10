@@ -22,12 +22,6 @@ var Room = function (roomId, gameConstructor) {
     this.state = 0;
 };
 
-Room.STATE = {
-    NONE: 0,
-    WAIT: 1,
-    INGAME: 2
-};
-
 Room.prototype = {
     // 必须实现的接口
     joinIn (playerId) {
@@ -48,3 +42,5 @@ Room.prototype = {
         return (this.state&state)!=0;
     }
 };
+
+module.exports = Room;

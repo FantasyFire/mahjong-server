@@ -8,10 +8,6 @@ var Game = function () {
 var p = Game.prototype;
 
 // 以下为必须实现的接口
-p.joinIn = function (playerId) {
-    console.error('接口joinIn未实现 in Game.joinIn');
-    return false;
-};
 p.canStart = function () {
     console.error('接口canStart未实现 in Game.canStart');
     return false;

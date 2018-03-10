@@ -30,7 +30,7 @@ MahjongRoom.prototype = {
         let self = this;
         return new Promise((resolve, reject) => {
             let exist = self.playerSequence.includes(playerId);
-            if (!self.inState(self.STATE.INGAME)) {
+            if (self.inState(self.STATE.INGAME)) {
                 reject({'error': true, 'result': `房间${self.roomId}已开始游戏，不能中途加入房间`});
             } else if (!exist) {
                 self._joinIn(playerId);
@@ -45,7 +45,7 @@ MahjongRoom.prototype = {
         return new Promise((resolve, reject) => {
             let exist = self.playerSequence.includes(playerId);
             if (exist) {
-                if (!self.inState(self.STATE.INGAME)) {
+                if (self.inState(self.STATE.INGAME)) {
                     reject({'error': true, 'result': `房间${self.roomId}已开始游戏，不能中途退出房间`});
                 } else {
                     self._exit(playerId);
