@@ -3,8 +3,6 @@ const util = require('util');
 
 var TurnBasedGame = function () {
     Game.call(this);
-
-    this.type = "turn-based";
 };
 
 TurnBasedGame.prototype = {

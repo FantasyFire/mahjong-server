@@ -1,12 +1,16 @@
-const table = require('./js/mahjongTable')();
+const co = require('co');
+const MahjongRoom = require('./js/mahjongRoom');
+const MahjongGame = require('./js/mahjongTable');
 
-table.reset();
+var room = new MahjongRoom('1000', MahjongGame);
 
-table.joinIn('player1');
-table.joinIn('player2');
-table.joinIn('player3');
-table.joinIn('player4');
+co(function* () {
+    yield room.joinIn('player1');
+    yield room.joinIn('player2');
+    yield room.joinIn('player3');
+    yield room.joinIn('player4');
 
-console.log('game canStart: ', table.canStart());
-table.gameStart();
-console.log('player data: ', table.playerData);
+    // console.log('game canStart: ', table.canStart());
+    yield room.startGame();
+    // console.log('player data: ', table.playerDatas);
+});

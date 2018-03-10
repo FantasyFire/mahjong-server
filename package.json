@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "co": "^4.6.0",
     "colors": "^1.1.2",
     "nodejs-websocket": "^1.7.1",
     "strftime": "^0.10.0"

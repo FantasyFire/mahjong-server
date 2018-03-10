@@ -25,7 +25,7 @@ p.reset = function () {
  * @param {Number} card - 希望获取的卡牌，如果不传，则正常返回顶部卡牌
  * @return {Number}
  */
-p._getTop = function (card) {
+p._getTopCard = function (card) {
     if (this.cardCount <= 0) return -1;
     if (card != undefined) {
         let idx = this.cards.indexOf(card);
@@ -47,7 +47,7 @@ p._getTop = function (card) {
  * @param {Number} card - 希望获取的卡牌，如果不传，则正常返回顶部卡牌
  * @return {Number}
  */
-p._getBottom = function (card) {
+p._getBottomCard = function (card) {
     if (this.cardCount <= 0) return -1;
     if (card != undefined) {
         let idx = this.cards.indexOf(card);
@@ -90,7 +90,7 @@ p._allocateCards = function () {
     let i;
     for (i=0; i<this.config.handCardCount; i++) {
         for (let playerId in this.playerDatas) {
-            this.playerDatas[playerId].handCards.push(this._getTop());
+            this.playerDatas[playerId].handCards.push(this._getTopCard());
         }
     }
 };
@@ -100,35 +100,43 @@ p._allocateCards = function () {
  * @param {String} playerId - 玩家id
  */
 p._drawCard = function (playerId) {
-    this.playerDatas[playerId].newCard = this._getTop();
+    this.playerDatas[playerId].newCard = this._getTopCard();
     // todo: 广播抽卡信息
 };
 
 // 实现Game的接口
 p.joinIn = function (playerId) {
-    let exist = this.playerSequence.includes(playerId);
-    if (!exist) {
-        this.playerSequence.push(playerId);
-        this.playerDatas[playerId] = {};
-    }
-    return !exist;
+    let self = this;
+    return new Promise((resolve, reject) => {
+        let exist = self.playerSequence.includes(playerId);
+        if (!exist) {
+            self.playerSequence.push(playerId);
+            self.playerDatas[playerId] = {};
+            resolve({'error': false, 'result': `player: ${playerId} 成功进入游戏`});
+        } else {
+            reject({'error': true, 'result': '用户已经进入房间'});
+        }
+    });
 };
 p.canStart = function () {
     return this.playerSequence.length == this.config.needPlayerCount;
 };
-p.gameStart = function () {
-    // todo: 修改游戏数据
-    // todo: 重置单局数据
-    this._resetCards();
-    this._resetPlayerData();
-    // todo: 开始新一局
-    this._allocateCards();
+p.start = function () {
+    let self = this;
+    return new Promise((resolve, reject) => {
+        // todo: 修改游戏数据
+        // todo: 重置单局数据
+        self._resetCards();
+        self._resetPlayerData();
+        // todo: 开始新一局
+        self._allocateCards();
 
-    this._drawCard(this.currentPlayerId);
+        self._drawCard(self.currentPlayerId);
 
-    // todo: 进入等待当前玩家动作状态
+        // todo: 进入等待当前玩家动作状态
 
-    return true;
+        resolve({'error': false, result: '游戏开始'});
+    });
 };
 
 util.inherits(MahjongTable, TurnBasedGame);
