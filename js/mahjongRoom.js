@@ -20,9 +20,14 @@ MahjongRoom.prototype = {
         delete this.playerDatas[playerId];
     },
     _startGame () {
+        // todo: 构造游戏数据对象，如第几局，有什么算分规则之类的
+        let data = {
+            playerSequence: this.playerSequence,
+            
+        };
         // todo: 构造游戏配置对象，如第几局，有什么算分规则之类的
         let gameConfig = {};
-        this.game = new this.gameConstructor(gameConfig);
+        this.game = new this.gameConstructor(data, gameConfig);
         this.game.start();
     },
     // 实现Room的接口

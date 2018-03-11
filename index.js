@@ -12,5 +12,6 @@ co(function* () {
 
     // console.log('game canStart: ', table.canStart());
     yield room.startGame();
-    // console.log('player data: ', table.playerDatas);
+    console.log('room: ', room);
+    console.log('game: ', room.game);
 });
