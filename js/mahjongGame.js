@@ -165,6 +165,12 @@ p.start = function () {
     });
 };
 
+// 玩家动作接口
+// 打出一张牌
+p.playCard = function (playerId, cardIndex) {
+    
+};
+
 util.inherits(MahjongGame, Game);
 
 module.exports = MahjongGame;
