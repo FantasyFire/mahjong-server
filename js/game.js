@@ -21,4 +21,10 @@ p.gameOver = function () {
     return false;
 };
 
+// 通用接口
+// 判断当前是否处于某状态
+p.inState = function (state) {
+    return (this.state&state)!=0;
+}
+
 module.exports = Game;

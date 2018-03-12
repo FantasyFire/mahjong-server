@@ -168,7 +168,10 @@ p.start = function () {
 // 玩家动作接口
 // 打出一张牌
 p.playCard = function (playerId, cardIndex) {
-    
+    let message = '';
+    if (!this.inState(this.STATE.WAIT_CURRENT_PLAYER_ACTION)) {
+        message = `玩家${playerId}不是当前玩家`;
+    }
 };
 
 util.inherits(MahjongGame, Game);
