@@ -123,6 +123,18 @@ p._drawCard = function (playerId) {
     this.playerDatas[playerId].newCard = this._getTopCard();
     // todo: 广播抽卡信息
 };
+/**
+ * 玩家打出一张牌
+ * @param {String} playerId - 玩家id
+ * @param {Number} cardIndex - 卡牌序数
+ */
+p._playCard = function (playerId, cardIndex) {
+    let playerData = this.playerDatas[playerId],
+        playNewCard = cardIndex==playerData.handCards.length, // 打出的是否新摸到的牌
+        card = playNewCard ? playerData.newCard : playerData.handCards[cardIndex]; // 打出的牌
+    playNewCard ? delete playerData.newCard : playerData.handCards.splice(cardIndex, 1); // 从手牌/摸牌中去掉打出的牌
+    playerData.playCard = card; // 设置打出的牌
+}
 
 p._getNextPlayerId = function () {
     return this.playerSequence[(this.playerSequence.indexOf(this.currentPlayer)+1)%this.playerSequence.length];
@@ -168,9 +180,20 @@ p.start = function () {
 // 玩家动作接口
 // 打出一张牌
 p.playCard = function (playerId, cardIndex) {
-    let message = '';
+    let message = '', 
+        playerData = this.playerDatas[playerId],
+        allHandCardCount = playerData.handCards.length + (playerData.newCard ? 1 : 0); // 获取手牌+（可能存在）新摸到的牌总数
     if (!this.inState(this.STATE.WAIT_CURRENT_PLAYER_ACTION)) {
         message = `玩家${playerId}不是当前玩家`;
+    }
+    if (this.cardIndex < 0 || this.cardIndex >= allHandCardCount) {
+        message = `玩家${playerId}手中没有第${cardIndex+1}张牌`;
+    }
+    if (message) { // 如果有message，意味着有错误
+        return {'error': true, 'result': message};
+    } else {
+        this._playCard(playerId, cardIndex);
+        return {'error': false, 'result': message};
     }
 };
 
