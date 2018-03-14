@@ -89,7 +89,7 @@ p._allocateCards = function () {
     }
 };
 
-// 初始化时用到的参数
+// 初始化方法
 /**
  * 重置单局玩家数据
  */
@@ -115,6 +115,7 @@ p._allocateCards = function () {
     }
 };
 
+// 玩家动作
 /**
  * 玩家抽卡
  * @param {String} playerId - 玩家id
@@ -136,9 +137,16 @@ p._playCard = function (playerId, cardIndex) {
     playerData.playCard = card; // 设置打出的牌
 }
 
+// 工具方法
+// 获取下一个玩家的id
 p._getNextPlayerId = function () {
     return this.playerSequence[(this.playerSequence.indexOf(this.currentPlayer)+1)%this.playerSequence.length];
-}
+};
+// 判断玩家是否存在某index的卡牌
+p._hasCardIndex = function (playerData, cardIndex) {
+    let allHandCardCount = playerData.handCards.length + (playerData.newCard ? 1 : 0); // 获取手牌+（可能存在）新摸到的牌总数
+    return cardIndex < 0 || cardIndex >= allHandCardCount;
+};
 
 // 实现Game的接口
 p.joinIn = function (playerId) {
@@ -178,15 +186,17 @@ p.start = function () {
 };
 
 // 玩家动作接口
+// 玩家动作总接口
+p.doAction = function (playerId, action, data) {
+
+};
 // 打出一张牌
 p.playCard = function (playerId, cardIndex) {
-    let message = '', 
-        playerData = this.playerDatas[playerId],
-        allHandCardCount = playerData.handCards.length + (playerData.newCard ? 1 : 0); // 获取手牌+（可能存在）新摸到的牌总数
+    let message = '', playerData = this.playerDatas[playerId];
     if (!this.inState(this.STATE.WAIT_CURRENT_PLAYER_ACTION)) {
         message = `玩家${playerId}不是当前玩家`;
     }
-    if (this.cardIndex < 0 || this.cardIndex >= allHandCardCount) {
+    if (this._hasCardIndex(playerData, cardIndex)) {
         message = `玩家${playerId}手中没有第${cardIndex+1}张牌`;
     }
     if (message) { // 如果有message，意味着有错误
