@@ -126,12 +126,11 @@ p._drawCard = function (playerId) {
 };
 /**
  * 玩家打出一张牌
- * @param {String} playerId - 玩家id
+ * @param {String} playerData - 玩家数据
  * @param {Number} cardIndex - 卡牌序数
  */
-p._playCard = function (playerId, cardIndex) {
-    let playerData = this.playerDatas[playerId],
-        playNewCard = cardIndex==playerData.handCards.length, // 打出的是否新摸到的牌
+p._playCard = function (playerData, cardIndex) {
+    let playNewCard = cardIndex==playerData.handCards.length, // 打出的是否新摸到的牌
         card = playNewCard ? playerData.newCard : playerData.handCards[cardIndex]; // 打出的牌
     playNewCard ? delete playerData.newCard : playerData.handCards.splice(cardIndex, 1); // 从手牌/摸牌中去掉打出的牌
     playerData.playCard = card; // 设置打出的牌
@@ -146,6 +145,14 @@ p._getNextPlayerId = function () {
 p._hasCardIndex = function (playerData, cardIndex) {
     let allHandCardCount = playerData.handCards.length + (playerData.newCard ? 1 : 0); // 获取手牌+（可能存在）新摸到的牌总数
     return cardIndex < 0 || cardIndex >= allHandCardCount;
+};
+// 整理手牌（如有newCard，则将newCard也整理进手牌中）
+p._sortHandCard = function (playerData) {
+    if (playerData.newCard) {
+        playerData.handCards.push(playerData.newCard);
+        delete playerData.newCard;
+    }
+    playerData.handCards.sort();
 };
 
 // 实现Game的接口
@@ -202,7 +209,9 @@ p.playCard = function (playerId, cardIndex) {
     if (message) { // 如果有message，意味着有错误
         return {'error': true, 'result': message};
     } else {
-        this._playCard(playerId, cardIndex);
+        this._playCard(playerData, cardIndex);
+        this._sortHandCard(playerData);
+        message = `玩家${playerId}打出${playerData.playCard}`;
         return {'error': false, 'result': message};
     }
 };

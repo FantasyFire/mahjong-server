@@ -14,4 +14,5 @@ co(function* () {
     yield room.startGame();
     console.log('room: ', room);
     console.log('game: ', room.game);
+    console.log(room.game.playCard('player1', 3));
 });
