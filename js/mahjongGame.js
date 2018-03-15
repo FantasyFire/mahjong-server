@@ -80,15 +80,6 @@ p._resetCards = function () {
     this.cardCount = this.cards.length;
 };
 
-p._allocateCards = function () {
-    let i;
-    for (i=0; i<this.config.handCardCount; i++) {
-        for (let playerId in this.playerDatas) {
-            this.playerDatas[playerId].handCards.push(this._getTopCard());
-        }
-    }
-};
-
 // 初始化方法
 /**
  * 重置单局玩家数据
@@ -104,11 +95,10 @@ p._resetPlayerData = function () {
 };
 
 /**
- * 分配卡牌
+ * 发牌
  */
-p._allocateCards = function () {
-    let i;
-    for (i=0; i<this.config.handCardCount; i++) {
+p._dealCards = function () {
+    for (let i=0; i<this.config.handCardCount; i++) {
         for (let playerId in this.playerDatas) {
             this.playerDatas[playerId].handCards.push(this._getTopCard());
         }
@@ -169,20 +159,23 @@ p.joinIn = function (playerId) {
         }
     });
 };
-p.canStart = function () {
-    return this.playerSequence.length == this.config.needPlayerCount;
-};
+// 开始游戏
 p.start = function () {
     let self = this;
     return new Promise((resolve, reject) => {
-        // todo: 修改游戏数据
         // todo: 重置单局数据
         self._resetCards();
         self._resetPlayerData();
         // todo: 开始新一局
-        self._allocateCards();
-
-        self._drawCard(self.currentPlayerId);
+        // 发牌
+        self._dealCards();
+        // todo: 通知发牌结果
+        // 整理手牌
+        for (let playerId in self.playerDatas) self._sortHandCard(self.playerDatas[playerId]);
+        // todo: 通知整理手牌结果
+        // 当前玩家摸牌
+        // self._drawCard(self.currentPlayerId);
+        // todo: 通知摸牌结果
         // 回合制游戏属性初始化
         this.turnCount = 0;
 
