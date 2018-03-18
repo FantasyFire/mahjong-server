@@ -47,3 +47,7 @@ function _deepCopy(any, referenceList) {
     }
     return ret;
 }
+
+var findPatternInArray = exports.findPatternInArray = function (arr, pattern) {
+    
+};

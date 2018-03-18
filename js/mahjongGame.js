@@ -112,7 +112,6 @@ p._dealCards = function () {
  */
 p._drawCard = function (playerId) {
     this.playerDatas[playerId].newCard = this._getTopCard();
-    // todo: 广播抽卡信息
 };
 /**
  * 玩家打出一张牌
@@ -124,12 +123,109 @@ p._playCard = function (playerData, cardIndex) {
         card = playNewCard ? playerData.newCard : playerData.handCards[cardIndex]; // 打出的牌
     playNewCard ? delete playerData.newCard : playerData.handCards.splice(cardIndex, 1); // 从手牌/摸牌中去掉打出的牌
     playerData.playCard = card; // 设置打出的牌
-}
+};
+
+// 动作执行合法性判断
+// todo: 将独立写一个模块判胡
+p._canHu = function (playerId, card) {
+    return false;
+};
+// todo: _canGangCard 和 _canPengCard 代码有大部分重复，考虑是否合并
+// 检查玩家是否能杠某张牌
+p._canGangCard = function (playerId, card) {
+    let handCards = this.playerDatas[playerId].handCards,
+        needCount = this.currentPlayerId === playerId ? 4 : 3; // 需要找到多少张牌
+    // to check: 约定玩家手牌已排序
+    for (let i = handCards.length; i--; ) {
+        if (handCards[i] < card) return false;
+        if (handCards[i] === card) return handCards[i-needCount+1] === card;
+    }
+    return false;
+};
+// 检查玩家是否能碰某张牌
+p._canPengCard = function (playerId, card) {
+    let handCards = this.playerDatas[playerId].handCards;
+    // to check: 约定玩家手牌已排序
+    for (let i = handCards.length; i--; ) {
+        if (handCards[i] < card) return false;
+        if (handCards[i] === card) return handCards[i-2] === card;
+    }
+    return false;
+};
+// 检查是否能以某2张手牌吃某张牌
+// to check: 此处的 handCards 应为长度为2且已排序的数组
+p._canChiCardWith2HandCards = function (card, handCards) {
+    let i;
+    for (i = handCards.length; i--; ) { // 将card顺序插入handCards
+        if (card > handCards[i]) {
+            handCards.splice(i+1, 0, card);
+            break;
+        }
+    }
+    i===-1 && (handCards.splice(0, 0, card));
+    return handCards[0]+1===handCards[1] && handCards[1]+1===handCards[2];
+};
+
+// 计算玩家可执行的动作
+/**
+ * 在当前玩家打出牌后，计算出其他玩家的可执行动作列表，以优先度排序
+ */
+// to check: 写完未测试
+// todo: 胡、杠、碰等动作对应的码值应写成一个const的枚举
+// todo: 这里没有考虑一炮多响的情况
+p._getOthersActionList = function () {
+    let currentPlayer = this.playerDatas[this.currentPlayerId],
+        currentPlayCard = currentPlayer.playCard,
+        otherPlayerIds = this._getOtherPlayerIdsByOrder(),
+        res = [];
+    for (let playerId of otherPlayerIds) { // 分别统计出玩家的可执行动作码
+        let actionCode = 0,
+            r = {playerId};
+        this._canHu(playerId, currentPlayCard) && (actionCode += 16);
+        this._canGangCard(playerId, currentPlayCard) && (actionCode += 8);
+        this._canPengCard(playerId, currentPlayCard) && (actionCode += 4);
+        let chiList = this._getChiList(playerId, currentPlayCard);
+        chiList.length > 0 && (actionCode += 2, r.chiList = chiList);
+        if (actionCode > 0) {
+            actionCode += 1; // 过 的actionCode
+            r.actionCode = actionCode;
+            res.push(r);
+        }
+    }
+    // 按actionCode大小排序
+    return res.sort((a, b) => a.actionCode-b.actionCode);
+};
+/**
+ * 获取玩家能吃的组合
+ * @return {Array.<Array.<Number>>} - 形如 [[2,1,3],[2,3,4]] 每个数组元素中的第一个数字为吃的牌
+ */
+p._getChiList = function (playerId, card) {
+    let handCards = this.playerDatas[playerId].handCards,
+        nearCards = [0,0,0,0,0], // 分别记录玩家手牌中 card-2,card-1,card,card+1,card+2 的数量
+        res = [];
+    for (let i = handCards.length; i--; ) { // 统计出nearCards
+        let hd = handCards[i];
+        if (hd > card+2) continue;
+        if (hd < card-2) break;
+        nearCards[hd-card+2]++;
+    }
+    [[0,1],[1,3],[3,4]].forEach(g => nearCards[g[0]] && nearCards[g[1]] && res.push([card, card+g[0]-2, card+g[1]-2]));
+    return res;
+};
 
 // 工具方法
 // 获取下一个玩家的id
-p._getNextPlayerId = function () {
-    return this.playerSequence[(this.playerSequence.indexOf(this.currentPlayer)+1)%this.playerSequence.length];
+p._getNextPlayerId = function (playerId) {
+    playerId = playerId || this.currentPlayerId;
+    if (!this.playerSequence.includes(playerId)) console.error(`playerId ${playerId} 在this.playerSequence ${this.playerSequence} 中找不到 in mahjongGame._getNextPlayerId`);
+    return this.playerSequence[(this.playerSequence.indexOf(playerId)+1)%this.playerSequence.length];
+};
+// 获取除 playerId 之外的玩家id数组（按顺序的）
+p._getOtherPlayerIdsByOrder = function (playerId) {
+    playerId = playerId || this.currentPlayerId;
+    let ps = this.playerSequence,
+        idx = res.indexOf(playerId);
+    return ps.slice(idx+1, ps.length).concat(ps.slice(0, idx));
 };
 // 判断玩家是否存在某index的卡牌
 p._hasCardIndex = function (playerData, cardIndex) {
@@ -137,12 +233,15 @@ p._hasCardIndex = function (playerData, cardIndex) {
     return cardIndex < 0 || cardIndex >= allHandCardCount;
 };
 // 整理手牌（如有newCard，则将newCard也整理进手牌中）
-p._sortHandCard = function (playerData) {
+// todo: 效率有待改进
+p._sortHandCard = function (playerData, clone = false) {
+    let res = clone ? playerData.handCards.concat() : playerData.handCards;
     if (playerData.newCard) {
-        playerData.handCards.push(playerData.newCard);
+        res.push(playerData.newCard);
         delete playerData.newCard;
     }
-    playerData.handCards.sort();
+    res.sort();
+    return res;
 };
 
 // 实现Game的接口
@@ -205,7 +304,7 @@ p.playCard = function (playerId, cardIndex) {
         this._playCard(playerData, cardIndex);
         this._sortHandCard(playerData);
         message = `玩家${playerId}打出${playerData.playCard}`;
-        return {'error': false, 'result': message};
+    return {'error': false, 'result': message};
     }
 };
 
