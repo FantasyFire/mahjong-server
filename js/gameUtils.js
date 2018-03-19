@@ -51,3 +51,13 @@ function _deepCopy(any, referenceList) {
 var findPatternInArray = exports.findPatternInArray = function (arr, pattern) {
     
 };
+
+/**
+ * 统计字符串或数组中每个字符/元素的出现次数
+ * @param {String|Array.<Number|String>} stringOrArray - 待统计的字符串或数组
+ * @return {Object} - 以元素名为key，出现次数为value的键值对对象
+ */
+var wordCount = exports.wordCount = function (stringOrArray) {
+    return (typeof(stringOrArray)=='string'?stringOrArray.split(''):stringOrArray)
+        .reduce((pre, cur) => (pre[cur]++ || (pre[cur]=1), pre), {});
+};
