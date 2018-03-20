@@ -57,7 +57,11 @@ var findPatternInArray = exports.findPatternInArray = function (arr, pattern) {
  * @param {String|Array.<Number|String>} stringOrArray - 待统计的字符串或数组
  * @return {Object} - 以元素名为key，出现次数为value的键值对对象
  */
-var wordCount = exports.wordCount = function (stringOrArray) {
+var countWord = exports.countWord = function (stringOrArray) {
     return (typeof(stringOrArray)=='string'?stringOrArray.split(''):stringOrArray)
         .reduce((pre, cur) => (pre[cur]++ || (pre[cur]=1), pre), {});
+};
+
+var timeLimitTask = exports.timeLimitTask = function () {
+    
 };

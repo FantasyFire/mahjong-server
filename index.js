@@ -15,4 +15,6 @@ co(function* () {
     console.log('room: ', room);
     console.log('game: ', room.game);
     console.log(room.game.playCard('player1', 3));
+    let actionList = room.game._retrieveOthersActionList();
+    console.log('action list: ', actionList);
 });

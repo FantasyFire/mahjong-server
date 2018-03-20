@@ -1,5 +1,5 @@
 const GU = require('./gameUtils.js');
-// const TurnBasedGame = require('./turn-based.js');
+const {ActionCode} = require('./mahjongConstants.js');
 const Game = require('./game.js');
 const util = require('util');
 
@@ -89,6 +89,9 @@ p._resetPlayerData = function () {
     this.playerSequence.forEach(function (playerId) {
         let pd = self.playerDatas[playerId] = {};
         pd.handCards = [];
+        pd.playedCards = [];
+        pd.playCard = undefined;
+        pd.newCard = undefined;
         pd.groupCards = [];
     });
     this.currentPlayerId = this.playerSequence[0];
@@ -124,6 +127,12 @@ p._playCard = function (playerData, cardIndex) {
     playNewCard ? delete playerData.newCard : playerData.handCards.splice(cardIndex, 1); // 从手牌/摸牌中去掉打出的牌
     playerData.playCard = card; // 设置打出的牌
 };
+/**
+ * 玩家碰
+ */
+p._pengCard = function (playerId, card) {
+
+};
 
 // 动作执行合法性判断
 // todo: 将独立写一个模块判胡
@@ -132,9 +141,15 @@ p._canHu = function (playerId, card) {
 };
 // todo: _canGangCard 和 _canPengCard 代码有大部分重复，考虑是否合并
 // 检查玩家是否能杠某张牌
+// todo: 未考虑碰后杠
 p._canGangCard = function (playerId, card) {
-    let handCards = this.playerDatas[playerId].handCards,
-        needCount = this.currentPlayerId === playerId ? 4 : 3; // 需要找到多少张牌
+    let playerData = this.playerDatas[playerId],
+        handCards = playerData.handCards,
+        isCurrentPlayer = this.currentPlayerId === playerId,
+        needCount = isCurrentPlayer ? 4 : 3; // 需要找到多少张牌
+    if (isCurrentPlayer) { // 对于当前玩家，查找是否有碰了这牌
+
+    }
     // to check: 约定玩家手牌已排序
     for (let i = handCards.length; i--; ) {
         if (handCards[i] < card) return false;
@@ -171,9 +186,8 @@ p._canChiCardWith2HandCards = function (card, handCards) {
  * 在当前玩家打出牌后，计算出其他玩家的可执行动作列表，以优先度排序
  */
 // to check: 写完未测试
-// todo: 胡、杠、碰等动作对应的码值应写成一个const的枚举
 // todo: 这里没有考虑一炮多响的情况
-p._getOthersActionList = function () {
+p._retrieveOthersActionList = function () {
     let currentPlayer = this.playerDatas[this.currentPlayerId],
         currentPlayCard = currentPlayer.playCard,
         otherPlayerIds = this._getOtherPlayerIdsByOrder(),
@@ -181,13 +195,13 @@ p._getOthersActionList = function () {
     for (let playerId of otherPlayerIds) { // 分别统计出玩家的可执行动作码
         let actionCode = 0,
             r = {playerId};
-        this._canHu(playerId, currentPlayCard) && (actionCode += 16);
-        this._canGangCard(playerId, currentPlayCard) && (actionCode += 8);
-        this._canPengCard(playerId, currentPlayCard) && (actionCode += 4);
-        let chiList = this._getChiList(playerId, currentPlayCard);
-        chiList.length > 0 && (actionCode += 2, r.chiList = chiList);
+        this._canHu(playerId, currentPlayCard) && (actionCode += ActionCode.Hu);
+        this._canGangCard(playerId, currentPlayCard) && (actionCode += ActionCode.Gang);
+        this._canPengCard(playerId, currentPlayCard) && (actionCode += ActionCode.Peng);
+        let chiList = this._retrieveChiList(playerId, currentPlayCard);
+        chiList.length > 0 && (actionCode += ActionCode.Chi, r.chiList = chiList);
         if (actionCode > 0) {
-            actionCode += 1; // 过 的actionCode
+            actionCode += ActionCode.Pass; // 过 的actionCode
             r.actionCode = actionCode;
             res.push(r);
         }
@@ -199,7 +213,7 @@ p._getOthersActionList = function () {
  * 获取玩家能吃的组合
  * @return {Array.<Array.<Number>>} - 形如 [[2,1,3],[2,3,4]] 每个数组元素中的第一个数字为吃的牌
  */
-p._getChiList = function (playerId, card) {
+p._retrieveChiList = function (playerId, card) {
     let handCards = this.playerDatas[playerId].handCards,
         nearCards = [0,0,0,0,0], // 分别记录玩家手牌中 card-2,card-1,card,card+1,card+2 的数量
         res = [];
@@ -224,7 +238,7 @@ p._getNextPlayerId = function (playerId) {
 p._getOtherPlayerIdsByOrder = function (playerId) {
     playerId = playerId || this.currentPlayerId;
     let ps = this.playerSequence,
-        idx = res.indexOf(playerId);
+        idx = ps.indexOf(playerId);
     return ps.slice(idx+1, ps.length).concat(ps.slice(0, idx));
 };
 // 判断玩家是否存在某index的卡牌
@@ -306,6 +320,17 @@ p.playCard = function (playerId, cardIndex) {
         message = `玩家${playerId}打出${playerData.playCard}`;
     return {'error': false, 'result': message};
     }
+};
+/**
+ * 杠（明杠、暗杠）
+ * @param {String} playerId - 玩家id
+ * @param {Number} card - 卡牌
+ */
+p.gang = function (playerId, card) {
+    if (playerId)
+};
+p.peng = function (playerId) {
+
 };
 
 util.inherits(MahjongGame, Game);
