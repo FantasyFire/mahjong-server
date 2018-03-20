@@ -2,6 +2,7 @@ const GU = require('./gameUtils.js');
 const {ActionCode} = require('./mahjongConstants.js');
 const Game = require('./game.js');
 const util = require('util');
+const StateMachine = require('javascript-state-machine');
 
 var MahjongGame = function (data, config) {
     Game.call(this);
@@ -15,13 +16,29 @@ var MahjongGame = function (data, config) {
     };
     this.config = Object.assign(defaultConfig, config || {});
     // 重写游戏状态
-    this.STATE = {
-        NONE: 0,
-        WAIT_CURRENT_PLAYER_ACTION: 1,
-        WAIT_OHTER_PLAYERS_ACTION: 2,
-        GAME_OVER: 4
-    };
-    this.state = this.STATE.NONE;
+    // this.STATE = {
+    //     NONE: 0,
+    //     WAIT_CURRENT_PLAYER_ACTION: 1,
+    //     WAIT_OHTER_PLAYERS_ACTION: 2,
+    //     GAME_OVER: 4
+    // };
+    // this.state = this.STATE.NONE;
+    // 使用 javascript-state-machine 做状态机
+    // todo: 添加各transition
+    this.fsm = new StateMachine({
+        init: 'none',
+        transitions: [
+            {name: 'start', from: 'none', to: 'waitPlayerAction'},
+            {name: 'playCard', from: 'waitPlayerAction', to: 'waitOthersAction'},
+            {name: 'gang', from: ['waitPlayerAction','waitOthersAction'], to: 'waitPlayerAction'},
+            {name: 'peng', from: 'waitOthersAction', to: 'waitPlayerAction'},
+            {name: 'chi', from: 'waitOthersAction', to: 'waitPlayerAction'},
+            {name: 'hu', from: 'waitPlayerAction', to: 'gameOver'},
+        ],
+        methods: {
+
+        }
+    });
 };
 
 var p = MahjongGame.prototype;
@@ -141,15 +158,16 @@ p._canHu = function (playerId, card) {
 };
 // todo: _canGangCard 和 _canPengCard 代码有大部分重复，考虑是否合并
 // 检查玩家是否能杠某张牌
-// todo: 未考虑碰后杠
 p._canGangCard = function (playerId, card) {
     let playerData = this.playerDatas[playerId],
         handCards = playerData.handCards,
         isCurrentPlayer = this.currentPlayerId === playerId,
         needCount = isCurrentPlayer ? 4 : 3; // 需要找到多少张牌
     if (isCurrentPlayer) { // 对于当前玩家，查找是否有碰了这牌
-
+        let groupCard = playerData.groupCards.find(gc => gc.type===ActionCode.Peng && gc.card===card);
+        if (groupCard) return true;
     }
+    // 查找是否能找到needCount张card
     // to check: 约定玩家手牌已排序
     for (let i = handCards.length; i--; ) {
         if (handCards[i] < card) return false;
@@ -293,20 +311,41 @@ p.start = function () {
         this.turnCount = 0;
 
         // todo: 进入等待当前玩家动作状态
-        self.state = self.STATE.WAIT_CURRENT_PLAYER_ACTION;
+        self.fsm.start();
+        // self.state = self.STATE.WAIT_CURRENT_PLAYER_ACTION;
         resolve({'error': false, result: '游戏开始'});
     });
 };
 
 // 玩家动作接口
 // 玩家动作总接口
+// todo: 这里通过状态机统一验证player能否做action，然后再分别调用子action动作进行详细验证
 p.doAction = function (playerId, action, data) {
-
+    let message = '';
+    // todo: 这里简单地对执行人做合法性判断
+    // todo: 这里的错误信息应该更详细
+    if (this.fsm.is('waitPlayerAction') && playerId !== this.currentPlayerId) {
+        message = '在等待当前玩家动作时，非当前玩家请求动作';
+    }
+    if (this.fsm.is('waitOthersAction') && playerId === this.currentPlayerId) {
+        message = '在等待其他玩家动作时，当前玩家请求动作';
+    }
+    if (this.fsm.cannot(action)) {
+        message = '当前状态下，玩家不可以执行该动作';
+    }
+    if (message) {
+        return {'error': true, message};
+    } else {
+        // to check: 是否所有动作都能正确调用，及返回
+        return this[action](playerId, data);
+    }
 };
 // 打出一张牌
 p.playCard = function (playerId, cardIndex) {
     let message = '', playerData = this.playerDatas[playerId];
-    if (!this.inState(this.STATE.WAIT_CURRENT_PLAYER_ACTION)) {
+    // if (!this.inState(this.STATE.WAIT_CURRENT_PLAYER_ACTION)) {
+    // todo: 这个判断应该取消，动作的状态、执行者合法性应由doAction负责
+    if (!this.fsm.is('waitPlayerAction')) {
         message = `玩家${playerId}不是当前玩家`;
     }
     if (this._hasCardIndex(playerData, cardIndex)) {
@@ -318,16 +357,16 @@ p.playCard = function (playerId, cardIndex) {
         this._playCard(playerData, cardIndex);
         this._sortHandCard(playerData);
         message = `玩家${playerId}打出${playerData.playCard}`;
-    return {'error': false, 'result': message};
+        return {'error': false, 'result': message};
     }
 };
 /**
- * 杠（明杠、暗杠）
+ * 杠（明杠、暗杠、碰后杠）
  * @param {String} playerId - 玩家id
  * @param {Number} card - 卡牌
  */
 p.gang = function (playerId, card) {
-    if (playerId)
+
 };
 p.peng = function (playerId) {
 

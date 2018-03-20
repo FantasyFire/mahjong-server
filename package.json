@@ -13,5 +13,8 @@
     "colors": "^1.1.2",
     "nodejs-websocket": "^1.7.1",
     "strftime": "^0.10.0"
+  },
+  "devDependencies": {
+    "javascript-state-machine": "^3.0.1"
   }
 }
