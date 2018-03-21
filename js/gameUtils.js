@@ -62,6 +62,8 @@ var countWord = exports.countWord = function (stringOrArray) {
         .reduce((pre, cur) => (pre[cur]++ || (pre[cur]=1), pre), {});
 };
 
-var timeLimitTask = exports.timeLimitTask = function () {
+// 构造方法
+// 限时任务（使用setTimeout实现）
+var TimeLimitTask = exports.TimeLimitTask = function () {
     
 };

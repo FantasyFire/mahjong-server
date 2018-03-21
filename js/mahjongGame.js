@@ -1,5 +1,5 @@
 const GU = require('./gameUtils.js');
-const {ActionCode} = require('./mahjongConstants.js');
+const {ActionCode, STATE} = require('./mahjongConstants.js');
 const Game = require('./game.js');
 const util = require('util');
 const StateMachine = require('javascript-state-machine');
@@ -16,24 +16,17 @@ var MahjongGame = function (data, config) {
     };
     this.config = Object.assign(defaultConfig, config || {});
     // 重写游戏状态
-    // this.STATE = {
-    //     NONE: 0,
-    //     WAIT_CURRENT_PLAYER_ACTION: 1,
-    //     WAIT_OHTER_PLAYERS_ACTION: 2,
-    //     GAME_OVER: 4
-    // };
-    // this.state = this.STATE.NONE;
     // 使用 javascript-state-machine 做状态机
     // todo: 添加各transition
     this.fsm = new StateMachine({
-        init: 'none',
+        init: STATE.NONE,
         transitions: [
-            {name: 'start', from: 'none', to: 'waitPlayerAction'},
-            {name: 'playCard', from: 'waitPlayerAction', to: 'waitOthersAction'},
-            {name: 'gang', from: ['waitPlayerAction','waitOthersAction'], to: 'waitPlayerAction'},
-            {name: 'peng', from: 'waitOthersAction', to: 'waitPlayerAction'},
-            {name: 'chi', from: 'waitOthersAction', to: 'waitPlayerAction'},
-            {name: 'hu', from: 'waitPlayerAction', to: 'gameOver'},
+            {name: 'start', from: STATE.NONE, to: STATE.WAIT_PLAYER_ACTION},
+            {name: 'playCard', from: STATE.WAIT_PLAYER_ACTION, to: STATE.WAIT_OHTERS_ACTION},
+            {name: 'gang', from: [STATE.WAIT_PLAYER_ACTION,STATE.WAIT_OHTERS_ACTION], to: STATE.WAIT_PLAYER_ACTION},
+            {name: 'peng', from: STATE.WAIT_OHTERS_ACTION, to: STATE.WAIT_PLAYER_ACTION},
+            {name: 'chi', from: STATE.WAIT_OHTERS_ACTION, to: STATE.WAIT_PLAYER_ACTION},
+            {name: 'hu', from: STATE.WAIT_PLAYER_ACTION, to: STATE.GAME_OVER},
         ],
         methods: {
 
@@ -145,11 +138,26 @@ p._playCard = function (playerData, cardIndex) {
     playerData.playCard = card; // 设置打出的牌
 };
 /**
+ * 玩家杠牌
+ */
+p._gangCard = function (playerId, card, actionCode) {
+    let playerData = this.playerDatas[playerId];
+    this._sortHandCard(playerData); // 先整理手牌
+    switch (actionCode) {
+        case ActionCode.AnGang:
+            let handCards = playerData.handCards;
+            handCards.splice(handCards.indexOf(card), 4);
+            playerData.groupCards.push({})
+    }
+};
+
+/**
  * 玩家碰
  */
 p._pengCard = function (playerId, card) {
 
 };
+
 
 // 动作执行合法性判断
 // todo: 将独立写一个模块判胡
@@ -157,7 +165,10 @@ p._canHu = function (playerId, card) {
     return false;
 };
 // todo: _canGangCard 和 _canPengCard 代码有大部分重复，考虑是否合并
-// 检查玩家是否能杠某张牌
+/**
+ * 检查玩家是否能杠某张牌
+ * @return {false|Number} - 不能杠返回false，能杠返回可以杠的ActionCode
+ */
 p._canGangCard = function (playerId, card) {
     let playerData = this.playerDatas[playerId],
         handCards = playerData.handCards,
@@ -165,13 +176,14 @@ p._canGangCard = function (playerId, card) {
         needCount = isCurrentPlayer ? 4 : 3; // 需要找到多少张牌
     if (isCurrentPlayer) { // 对于当前玩家，查找是否有碰了这牌
         let groupCard = playerData.groupCards.find(gc => gc.type===ActionCode.Peng && gc.card===card);
-        if (groupCard) return true;
+        if (groupCard) return ActionCode.PengHouGang;
     }
     // 查找是否能找到needCount张card
     // to check: 约定玩家手牌已排序
     for (let i = handCards.length; i--; ) {
         if (handCards[i] < card) return false;
-        if (handCards[i] === card) return handCards[i-needCount+1] === card;
+        if (handCards[i] === card) 
+            return handCards[i-needCount+1] === card ? isCurrentPlayer ? ActionCode.AnGang : ActionCode.MingGang : false;
     }
     return false;
 };
@@ -324,10 +336,10 @@ p.doAction = function (playerId, action, data) {
     let message = '';
     // todo: 这里简单地对执行人做合法性判断
     // todo: 这里的错误信息应该更详细
-    if (this.fsm.is('waitPlayerAction') && playerId !== this.currentPlayerId) {
+    if (this.fsm.is(STATE.WAIT_PLAYER_ACTION) && playerId !== this.currentPlayerId) {
         message = '在等待当前玩家动作时，非当前玩家请求动作';
     }
-    if (this.fsm.is('waitOthersAction') && playerId === this.currentPlayerId) {
+    if (this.fsm.is(STATE.WAIT_OHTERS_ACTION) && playerId === this.currentPlayerId) {
         message = '在等待其他玩家动作时，当前玩家请求动作';
     }
     if (this.fsm.cannot(action)) {
@@ -345,7 +357,7 @@ p.playCard = function (playerId, cardIndex) {
     let message = '', playerData = this.playerDatas[playerId];
     // if (!this.inState(this.STATE.WAIT_CURRENT_PLAYER_ACTION)) {
     // todo: 这个判断应该取消，动作的状态、执行者合法性应由doAction负责
-    if (!this.fsm.is('waitPlayerAction')) {
+    if (!this.fsm.is(STATE.WAIT_PLAYER_ACTION)) {
         message = `玩家${playerId}不是当前玩家`;
     }
     if (this._hasCardIndex(playerData, cardIndex)) {
@@ -366,7 +378,11 @@ p.playCard = function (playerId, cardIndex) {
  * @param {Number} card - 卡牌
  */
 p.gang = function (playerId, card) {
-
+    let actionCode = this._canGangCard(playerId, card);
+    if (actionCode) {
+        this._gangCard
+        return {'error': false, message: `玩家${playerId}杠${card}`};
+    }
 };
 p.peng = function (playerId) {
 

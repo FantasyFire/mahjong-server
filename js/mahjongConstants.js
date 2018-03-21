@@ -15,6 +15,14 @@ const ActionCode = {
     Pass: 1 // 过
 };
 
+// 游戏状态
+const STATE = {
+    NONE: 'none',
+    WAIT_PLAYER_ACTION: 'waitPlayerAction',
+    WAIT_OHTERS_ACTION: 'waitOthersAction',
+    GAME_OVER: 'gameOver'
+};
+
 module.exports = {
     ActionCode
 };
