@@ -9,7 +9,7 @@
 
 关于注释
 有 todo: 字样为待完成的部分
-有 to check: 字样为带检验部分
+有 to check: 字样为待检验部分
 
 一些设计思路
 1、
@@ -50,10 +50,10 @@
 游戏同步机制采用状态同步，接收到玩家的动作后，服务器返回新的状态，客户端根据状态进行渲染
 应尽量减少传输的信息
 
-规定 胡（点炮、自摸）、杠（暗杠、明杠、碰后杠）、碰、吃、过 用二进制表示，如下：
+规定 胡（点炮、自摸）、杠（暗杠、明杠、碰后杠）、碰、吃、过，如下（在mahjongGame.js中定义ActionCode枚举对象）：
 自摸：128
 点炮：64
-胡：192
+胡：192（128+64）
 暗杠：32
 明杠：16
 碰后杠：8
@@ -62,7 +62,7 @@
 吃：2
 过：1
 
-如127表示胡、杠、碰、吃、过5个动作ui都显示，127在注释中取名“可执行动作码”
+如255表示胡、杠、碰、吃、过5个动作ui都显示，255在注释中取名“可执行动作码”，变量命名为actionCode
 特殊的，如吃动作，有额外数据（可吃的组合列举）以另外的数据结构传递
 
 5、
@@ -75,4 +75,33 @@
     groupCards: Array.<Object>, // 吃碰杠后的组合好的牌
 }
 
-groupCards group
+6、
+动作数据结构
+胡
+{
+    actionCode: Number, // 128|64
+    card: Number,
+    from: String
+}
+杠
+{
+    actionCode: Number, // 32|16|8
+    card: Number,
+    from: String
+}
+碰
+{
+    actionCode: Number, // 4
+    card: Number,
+    from: String
+}
+吃
+{
+    actionCode: Number, // 2
+    cards: Number, // 应为长度为3的数组，第一个元素为吃的牌
+    from: String
+}
+过
+{
+    actionCode: Number // 1
+}
