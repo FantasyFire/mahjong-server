@@ -15,6 +15,11 @@ const ActionCode = {
     Pass: 1 // 过
 };
 
+// 等待玩家时限
+const WaitTimeLimit = {
+    ACTION: 15000, // 15s
+};
+
 // 游戏状态
 const STATE = {
     NONE: 'none',
