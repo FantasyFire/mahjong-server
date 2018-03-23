@@ -15,9 +15,12 @@ var MahjongGame = function (data, config) {
         handCardCount: 13
     };
     this.config = Object.assign(defaultConfig, config || {});
+    // 重置游戏变量
+    this.othersActionList = []; // 当前玩家打牌后，其他玩家的可执行动作列表
     // 重写游戏状态
     // 使用 javascript-state-machine 做状态机
     // todo: 添加各transition
+    let self = this;
     this.fsm = new StateMachine({
         init: STATE.NONE,
         transitions: [
@@ -29,7 +32,10 @@ var MahjongGame = function (data, config) {
             {name: 'hu', from: STATE.WAIT_PLAYER_ACTION, to: STATE.GAME_OVER},
         ],
         methods: {
-
+            onPlayCard () {
+                self.othersActionList = self._retrieveOthersActionList();
+                // todo: 开始按顺序询问动作
+            }
         }
     });
 };
