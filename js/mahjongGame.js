@@ -331,6 +331,22 @@ p._sortHandCard = function (playerData, clone = false) {
     return res;
 };
 
+// 关于通信
+// todo: 创建一个轮询对象
+p._createPolling = function (actionList, onFinished) {
+    let idx = -1;
+    return {
+        next () {
+            idx++;
+            if (idx >= actionList.length) {
+                onFinished();
+            } else {
+                
+            }
+        }
+    };
+};
+
 // 实现Game的接口
 p.joinIn = function (playerId) {
     let self = this;
