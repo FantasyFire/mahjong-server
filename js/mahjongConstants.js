@@ -29,5 +29,7 @@ const STATE = {
 };
 
 module.exports = {
-    ActionCode
+    ActionCode,
+    WaitTimeLimit,
+    STATE
 };

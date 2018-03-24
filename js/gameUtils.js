@@ -63,7 +63,15 @@ var countWord = exports.countWord = function (stringOrArray) {
 };
 
 // 构造方法
-// 限时任务（使用setTimeout实现）
+// todo: 限时任务（使用setTimeout实现）
 var TimeLimitTask = exports.TimeLimitTask = function () {
     
+};
+
+var objFilter = exports.objFilter = function (obj, fn) {
+    let result = [];
+    for (let key in obj) {
+        if (fn(obj[key], key)) result.push({key, value: obj[key]});
+    }
+    return result;
 };

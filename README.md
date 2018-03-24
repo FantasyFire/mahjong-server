@@ -36,8 +36,8 @@
 游戏中的状态及转换
 
 初始 init
-等待当前玩家动作 wait_current_player_action
-等待其他玩家动作 wait_other_players_action
+等待当前玩家动作 waitPlayerAction
+等待其他玩家动作 waitOthersAction
 结束 over
 
 等待当前玩家动作 ----------------------------------> 等待当前玩家动作
@@ -98,7 +98,7 @@
 吃
 {
     actionCode: Number, // 2
-    cards: Number, // 应为长度为3的数组，第一个元素为吃的牌
+    card: Number, // 应为长度为3的数组，第一个元素为吃的牌
     from: String
 }
 过
