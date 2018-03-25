@@ -30,17 +30,30 @@ var MahjongGame = function (data, config) {
             {name: 'peng', from: STATE.WAIT_OHTERS_ACTION, to: STATE.WAIT_PLAYER_ACTION},
             {name: 'chi', from: STATE.WAIT_OHTERS_ACTION, to: STATE.WAIT_PLAYER_ACTION},
             {name: 'hu', from: [STATE.WAIT_PLAYER_ACTION,STATE.WAIT_OHTERS_ACTION], to: STATE.GAME_OVER},
+            {name: 'pass', from: STATE.WAIT_OHTERS_ACTION, to: STATE.WAIT_OHTERS_ACTION},
             {name: 'next', from: STATE.WAIT_OHTERS_ACTION, to: STATE.WAIT_PLAYER_ACTION}
         ],
         methods: {
+            onStart () {
+                console.log('onStart');
+                self._drawCard(self.currentPlayerId);
+            },
             onPlayCard () {
                 console.log('onPlayCard');
                 // 获取其他玩家可执行动作队列
                 self.othersActionList = self._retrieveOthersActionList();
             },
-            onStart () {
-                console.log('onStart');
-                self._drawCard(self.currentPlayerId);
+            onGang (transition, playerId) {
+                console.log('onGang');
+                if (playerId !== self.currentPlayerId) self.currentPlayerId = playerId;
+            },
+            onPeng (transition, playerId) {
+                console.log('onPeng');
+                self.currentPlayerId = playerId;
+            },
+            onChi (transition, playerId) {
+                console.log('onChi');
+                self.currentPlayerId = playerId;
             },
             onNext () {
                 console.log('onNext');
@@ -55,7 +68,7 @@ var MahjongGame = function (data, config) {
             },
             onWaitOthersAction () {
                 console.log('onWaitOthersAction');
-                this._checkNextOthersAction();
+                self._checkNextOthersAction();
             }
         }
     });
@@ -351,12 +364,12 @@ p._retrieveGangCard = function (playerId) {
 // 检查下一个其他玩家的可执行动作
 // todo: 感觉这个方法命名不好，耦合度很高，考虑优化
 p._checkNextOthersAction = function () {
-    let playerAction = self.othersActionList.shift();
+    let playerAction = this.othersActionList.shift();
     if (playerAction === undefined) { // 没有其他玩家可执行动作，进入下一回合
         this.fsm.next();
     } else {
         // todo: 通知玩家更新界面状态（动作按钮状态更新）
-
+        console.log(`通知玩家: `, playerAction);
     }
 };
 
@@ -404,7 +417,7 @@ p._sortHandCard = function (playerData, clone = false) {
 // 关于通信
 // todo: 返回一个玩家的状态对象/字符串
 p._getPlayerState = function (playerId) {
-
+    
 };
 
 // 实现Game的接口
@@ -428,16 +441,13 @@ p.start = function () {
         // todo: 重置单局数据
         self._resetCards();
         self._resetPlayerData();
-        // todo: 开始新一局
         // 发牌
         self._dealCards();
         // todo: 通知发牌结果
         // 整理手牌
         for (let playerId in self.playerDatas) self._sortHandCard(self.playerDatas[playerId]);
         // todo: 通知整理手牌结果
-        // 当前玩家摸牌
-        // self._drawCard(self.currentPlayerId);
-        // todo: 通知摸牌结果
+
         // 回合制游戏属性初始化
         this.turnCount = 0;
 
@@ -453,13 +463,17 @@ p.start = function () {
 // todo: 这里通过状态机统一验证player能否做action，然后再分别调用子action动作进行详细验证
 p.doAction = function (playerId, action, data) {
     let message = '';
-    // todo: 这里简单地对执行人做合法性判断
+    // todo: 缺少动作合法性判断（动作是否存在）
     // todo: 这里的错误信息应该更详细
     if (this.fsm.is(STATE.WAIT_PLAYER_ACTION) && playerId !== this.currentPlayerId) {
         message = '在等待当前玩家动作时，非当前玩家请求动作';
     }
     if (this.fsm.is(STATE.WAIT_OHTERS_ACTION) && playerId === this.currentPlayerId) {
-        message = '在等待其他玩家动作时，当前玩家请求动作';
+        if (playerId === this.currentPlayerId)
+            message = '在等待其他玩家动作时，当前玩家请求动作';
+        // to check: 此时this.othersActionList能确保有至少1个元素么？
+        else if (playerId !== this.othersActionList[0].playerId)
+            message = '在等待其他玩家动作时，非当前询问玩家请求动作';
     }
     if (this.fsm.cannot(action)) {
         message = '当前状态下，玩家不可以执行该动作';
@@ -468,7 +482,13 @@ p.doAction = function (playerId, action, data) {
         return {'error': true, 'result': message};
     } else {
         // to check: 是否所有动作都能正确调用，及返回
-        return this[action](playerId, data);
+        let res = this[action](playerId, data);
+        if (res.error) {
+            return res;
+        } else {
+            this.fsm[action](playerId);
+            return res;
+        }
     }
 };
 // 打出一张牌
