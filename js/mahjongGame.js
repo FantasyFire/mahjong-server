@@ -417,7 +417,8 @@ p._sortHandCard = function (playerData, clone = false) {
 // 关于通信
 // todo: 返回一个玩家的状态对象/字符串
 p._getPlayerState = function (playerId) {
-    
+    let state = {};
+    // 
 };
 
 // 实现Game的接口
