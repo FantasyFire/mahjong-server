@@ -105,3 +105,22 @@
 {
     actionCode: Number // 1
 }
+
+7、
+麻将牌对应号码
+一万~九万：11~19
+一条~九条：31~39
+一筒~九筒：51~59
+东南西北：70、73、76、79
+中发白：90、93、96
+背面：99
+
+8、
+玩家状态的完整结构（以后考虑将key简化压缩）
+{
+    playerId: String,
+    actionCode: Number,
+    groupCards: String, // 下面详细解释
+    handCards: String,
+    newCard: Number|undefined
+}
