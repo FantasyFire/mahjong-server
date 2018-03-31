@@ -38,8 +38,8 @@ var MahjongGame = function (data, config) {
                 console.log('onStart');
                 self._drawCard(self.currentPlayerId);
             },
-            onPlayCard () {
-                console.log('onPlayCard');
+            onBeforePlayCard () {
+                console.log('onBeforePlayCard');
                 // 获取其他玩家可执行动作队列
                 self.othersActionList = self._retrieveOthersActionList();
             },
@@ -55,8 +55,8 @@ var MahjongGame = function (data, config) {
                 console.log('onChi');
                 self.currentPlayerId = playerId;
             },
-            onNext () {
-                console.log('onNext');
+            onBeforeNext () {
+                console.log('onBeforeNext');
                 self.currentPlayerId = self._getNextPlayerId();
                 self._drawCard(self.currentPlayerId);
             },
@@ -68,7 +68,11 @@ var MahjongGame = function (data, config) {
             },
             onWaitOthersAction () {
                 console.log('onWaitOthersAction');
-                self._checkNextOthersAction();
+                // 等1s，解决fsm的上一个transition还未完成就next的问题
+                // todo: 这个解决办法不是很好，考虑别的解决办法
+                setTimeout(function () {
+                    self._checkNextOthersAction();
+                }, 1000);
             }
         }
     });
@@ -122,6 +126,10 @@ p._getBottomCard = function (card) {
     return card;
 };
 
+p._getCardRemain = function () {
+    return this.cardCount;
+};
+
 p._resetCards = function () {
     // 初始化麻将牌
     this.cards = GU.shuffle([].concat(this.config.cards));
@@ -138,6 +146,7 @@ p._resetPlayerData = function () {
     let self = this;
     this.playerSequence.forEach(function (playerId) {
         let pd = self.playerDatas[playerId] = {};
+        pd.actionCode = 0;
         pd.handCards = [];
         pd.playedCards = [];
         pd.playCard = undefined;
@@ -303,6 +312,7 @@ p._getCurrentPlayerAction = function () {
     this._canHu(playerId) && (actionCode += ActionCode.Hu);
     let gangList = this._retrieveGangCard(playerId);
     gangList.length > 0 && (actionCode += ActionCode.Gang, result.gangList = gangList);
+    result.actionCode = actionCode;
     return result;
 };
 /**
@@ -415,10 +425,28 @@ p._sortHandCard = function (playerData, clone = false) {
 };
 
 // 关于通信
-// todo: 返回一个玩家的状态对象/字符串
-p._getPlayerState = function (playerId) {
-    let state = {};
-    // 
+// todo: 返回一对某玩家的游戏状态
+p._getGameState = function (playerId) {
+    let self = this;
+    // 桌面数据应该是对所有玩家公开的
+    let tableData = {
+        cardRemain: this._getCardRemain(),
+        currentPlayerId: this.currentPlayerId,
+        state: this.fsm.state
+    };
+    // todo: 玩家数据，本人数据公开，其他玩家数据屏蔽（屏蔽考虑加一个私有方法实现）
+    let playerDatas = {};
+    this.playerSequence.forEach(function (pid) {
+        let pd = self.playerDatas[pid];
+        playerDatas[pid] = {
+            actionCode: pd.actionCode,
+            groupCards: pd.groupCards,
+            handCards: pd.handCards,
+            newCard: pd.newCard,
+            playCard: pd.playCard
+        };
+    });
+    return {tableData, playerDatas};
 };
 
 // 实现Game的接口

@@ -12,10 +12,11 @@ co(function* () {
 
     // console.log('game canStart: ', table.canStart());
     yield room.startGame();
-    console.log('room: ', room);
-    console.log('game: ', room.game);
-    room.game.doAction('player1', 'playCard', 7)
+    console.log(1);
+    // console.log('room: ', room);
+    // console.log('game: ', room.game);
+    // room.game.doAction('player1', 'playCard', 7);
+    // console.log(JSON.stringify(room.game._getGameState('player1')));
     // console.log(room.game.playCard('player1', 3));
-    // let actionList = room.game._retrieveOthersActionList();
     // console.log('action list: ', actionList);
 });

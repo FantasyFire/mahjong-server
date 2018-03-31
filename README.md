@@ -116,11 +116,24 @@
 背面：99
 
 8、
-玩家状态的完整结构（以后考虑将key简化压缩）
+玩家状态的完整结构（以后考虑将key、value简化压缩）
 {
-    playerId: String,
     actionCode: Number,
-    groupCards: String, // 下面详细解释
-    handCards: String,
-    newCard: Number|undefined
+    groupCards: Array.<Object>, // todo: 下面详细解释
+    handCards: Array.<Number>,
+    newCard: Number|undefined,
+    playCard: Number|undefined
+}
+
+9、
+返回前端消息结构
+{
+    tableData: {
+        cardRemain: Number,
+        currentPlayerId: String,
+        state: String
+    },
+    playerDatas: {
+        "玩家1id" : 玩家状态对象
+    }
 }
