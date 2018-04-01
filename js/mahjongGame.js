@@ -45,7 +45,7 @@ var MahjongGame = function (data, config) {
             },
             onGang (transition, playerId) {
                 console.log('onGang');
-                if (playerId !== self.currentPlayerId) self.currentPlayerId = playerId;
+                self.currentPlayerId = playerId;
             },
             onPeng (transition, playerId) {
                 console.log('onPeng');
