@@ -17,6 +17,10 @@ io.on('connection', function (socket) {
     console.log('a user connected');
     socket.on('chat message', function(msg){
         console.log('message: ' + msg);
+        let data = JSON.parse(msg);
+        let res = room.game.doAction(data.playerId, data.action, data.data);
+        console.log(res);
+        socket.emit('news', JSON.stringify(room.game._getGameState()));
     });
     socket.on('disconnect', function(){
         console.log('user disconnected');

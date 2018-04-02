@@ -32,6 +32,11 @@
             $('#m').val('');
             return false;
         });
+
+        socket.on('news', msg => {
+            console.log(`收到消息：${msg}`);
+            $('#messages').append(`<li>${msg}</li>`)
+        });
     });
 </script>
 </html>

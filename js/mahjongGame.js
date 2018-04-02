@@ -57,6 +57,9 @@ var MahjongGame = function (data, config) {
             },
             onBeforeNext () {
                 console.log('onBeforeNext');
+                let oldPlayerData = self.playerDatas[self.currentPlayerId];
+                oldPlayerData.playedCards.push(oldPlayerData.playCard);
+                oldPlayerData.playCard = undefined;
                 self.currentPlayerId = self._getNextPlayerId();
                 self._drawCard(self.currentPlayerId);
             },
