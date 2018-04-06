@@ -1,6 +1,7 @@
 const GU = require('./gameUtils.js');
 const {ActionCode, STATE} = require('./mahjongConstants.js');
 const Game = require('./game.js');
+const checkHu = require('./checkHu.js');
 const util = require('util');
 const StateMachine = require('javascript-state-machine');
 
@@ -249,7 +250,8 @@ p._chiCardWith2HandCards = function (playerId, card, twoHandCards) {
 // 动作执行合法性判断
 // todo: 将独立写一个模块判胡
 p._canHu = function (playerId, card) {
-    return false;
+    let playerData = this.playerDatas[playerId];
+    return checkHu(playerData, this.config, card);
 };
 // todo: _canGangCard 和 _canPengCard 代码有大部分重复，考虑是否合并
 /**
