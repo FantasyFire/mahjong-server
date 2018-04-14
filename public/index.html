@@ -15,14 +15,17 @@
         #messages li { padding: 5px 10px; }
         #messages li:nth-child(odd) { background: #eee; }
     </style>
+    <link rel="stylesheet" type="text/css" href='css/style.css'/>
 </head>
 <script src="lib/socket.io.js"></script>
 <script src="lib/jquery-1.11.1.js"></script>
+<script src="js/component.js"></script>
 <body>
     <ul id="messages"></ul>
     <form action="">
       <input id="m" autocomplete="off" /><button>Send</button>
     </form>
+    <div id="wrapper" style="position: absolute;top: 50%;left:20%;width:500px"></div>
 </body>
 <script>
     $(function () {
@@ -38,5 +41,21 @@
             $('#messages').append(`<li>${msg}</li>`)
         });
     });
+
+    const mount = (wrapper, components) => {
+        components = [].concat(components);
+        components.forEach(component => {
+            wrapper.appendChild(component.renderDOM());
+            component.onStateChange = (oldEl, newEl) => {
+                wrapper.replaceChild(newEl, oldEl);
+            };
+        });
+    };
+
+    mount(document.querySelector('#wrapper'), [
+        new Card({text: '1筒'}),
+        new Card({text: '2筒'}),
+        new Card({text: '3筒'})
+    ]);
 </script>
 </html>
