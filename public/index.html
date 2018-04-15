@@ -46,9 +46,7 @@
         components = [].concat(components);
         components.forEach(component => {
             wrapper.appendChild(component.renderDOM());
-            component.onStateChange = (oldEl, newEl) => {
-                wrapper.replaceChild(newEl, oldEl);
-            };
+            component.wrapper = wrapper;
         });
     };
 

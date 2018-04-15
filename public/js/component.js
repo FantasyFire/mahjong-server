@@ -11,9 +11,9 @@ class Component {
 
     setState (state) {
         const oldEl = this.el;
-        this.state = state;
+        this.state = Object.assign({}, this.state, state); // 简单的合并状态
         this.el = this.renderDOM();
-        this.onStateChange && this.onStateChange(oldEl, this.el);
+        this.wrapper && this.wrapper.replaceChild(this.el, oldEl);
     }
 
     renderDOM () {
