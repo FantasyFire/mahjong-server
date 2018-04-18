@@ -1,3 +1,11 @@
+.card-group {
+    position: relative;
+    height: 53.25px;
+    margin-left: 30px;
+    margin-right: 30px;
+    padding: 2px;
+}
+
 .card {
     position: relative;
     float: left;

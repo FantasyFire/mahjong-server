@@ -43,3 +43,25 @@ class Card extends Component {
         `;
     }
 }
+
+class CardGroup extends Component {
+    constructor (props) {
+        super(props);
+        this.state = {visible: true, selected: false};
+    }
+
+    renderCard (text) {
+        let card = new Card({text});
+        return card.render();
+    }
+
+    render () {
+        return `
+            <div class='card-group' style='background-color:red}'>
+                ${this.renderCard('3条')}
+                ${this.renderCard('3筒')}
+                ${this.renderCard('东风')}
+            </div>
+        `;
+    }
+}
