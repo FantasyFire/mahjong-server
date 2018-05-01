@@ -3,9 +3,10 @@
  * @param {String} - 房间id
  * @param {Function} - 游戏构造函数
  */
-var Room = function (roomId, gameConstructor) {
+var Room = function (roomId, gameConstructor, socket) {
     this.roomId = roomId;
     this.gameConstructor = gameConstructor;
+    this.socket = socket;
     this.gameCount = 0; // 记录游戏局数
     this.playerSequence = []; // 玩家顺序
     this.playerDatas = {}; // 玩家数据：玩家id - 玩家数据对象

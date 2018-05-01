@@ -15,12 +15,26 @@ app.use(express.static(__dirname + '/public'));
 
 io.on('connection', function (socket) {
     console.log('a user connected');
+    co(function* () {
+        yield room.joinIn('player1');
+        yield room.joinIn('player2');
+        yield room.joinIn('player3');
+        yield room.joinIn('player4');
+        room._initGame();
+        room.game.socket = socket; // 测试时，这样弄
+        
+        yield room.startGame();
+    });
     socket.on('chat message', function(msg){
         console.log('message: ' + msg);
-        let data = JSON.parse(msg);
-        let res = room.game.doAction(data.playerId, data.action, data.data);
-        console.log(res);
-        socket.emit('news', JSON.stringify(room.game._getGameState()));
+        try {
+            let data = JSON.parse(msg);
+            let res = room.game.doAction(data.playerId, data.action, data.data);
+            console.log(res);
+            // socket.emit('news', JSON.stringify(room.game._getGameState()));
+        } catch (err) {
+            console.error('sth. wrong, msg: ', msg);
+        }
     });
     socket.on('disconnect', function(){
         console.log('user disconnected');
@@ -32,19 +46,11 @@ http.listen(3000, function () {
 });
 
 
-co(function* () {
-    yield room.joinIn('player1');
-    yield room.joinIn('player2');
-    yield room.joinIn('player3');
-    yield room.joinIn('player4');
+// co(function* () {
+//     yield room.joinIn('player1');
+//     yield room.joinIn('player2');
+//     yield room.joinIn('player3');
+//     yield room.joinIn('player4');
 
-    // console.log('game canStart: ', table.canStart());
-    yield room.startGame();
-    console.log(1);
-    // console.log('room: ', room);
-    // console.log('game: ', room.game);
-    // room.game.doAction('player1', 'playCard', 7);
-    // console.log(JSON.stringify(room.game._getGameState('player1')));
-    // console.log(room.game.playCard('player1', 3));
-    // console.log('action list: ', actionList);
-});
+//     yield room.startGame();
+// });

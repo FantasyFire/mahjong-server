@@ -8,7 +8,7 @@
 游戏对象结束时返回游戏结果给房间对象，由房间对象处理这些结果（修改玩家分数、存数据库等）
 
 关于注释
-有 todo: 字样为待完成的部分
+有 TODO: 字样为待完成的部分
 有 to check: 字样为待检验部分
 
 一些设计思路
@@ -119,7 +119,7 @@
 玩家状态的完整结构（以后考虑将key、value简化压缩）
 {
     actionCode: Number,
-    groupCards: Array.<Object>, // todo: 下面详细解释
+    groupCards: Array.<Object>, // TODO: 下面详细解释
     handCards: Array.<Number>,
     newCard: Number|undefined,
     playCard: Number|undefined

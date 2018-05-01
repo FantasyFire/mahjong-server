@@ -20,7 +20,7 @@ var MahjongGame = function (data, config) {
     this.othersActionList = []; // 当前玩家打牌后，其他玩家的可执行动作列表
     // 重写游戏状态
     // 使用 javascript-state-machine 做状态机
-    // todo: 添加各transition
+    // TODO: 添加各transition
     let self = this;
     this.fsm = new StateMachine({
         init: STATE.NONE,
@@ -38,6 +38,8 @@ var MahjongGame = function (data, config) {
             onStart () {
                 console.log('onStart');
                 self._drawCard(self.currentPlayerId);
+                // TODO: 通知更新玩家状态（整个状态）
+                self._sendToPlayer(JSON.stringify(self._getGameState()));
             },
             onBeforePlayCard () {
                 console.log('onBeforePlayCard');
@@ -67,13 +69,14 @@ var MahjongGame = function (data, config) {
             onWaitPlayerAction () {
                 console.log('onWaitPlayerAction');
                 let action = self._getCurrentPlayerAction();
-                // todo: 通知更新玩家状态（整个状态）
+                // TODO: 通知更新玩家状态（整个状态）
+                self._sendToPlayer(JSON.stringify(self._getGameState()));
                 console.log(`通知玩家${action.playerId}可执行动作: `, action);
             },
             onWaitOthersAction () {
                 console.log('onWaitOthersAction');
                 // 等1s，解决fsm的上一个transition还未完成就next的问题
-                // todo: 这个解决办法不是很好，考虑别的解决办法
+                // TODO: 这个解决办法不是很好，考虑别的解决办法
                 setTimeout(function () {
                     self._checkNextOthersAction();
                 }, 1000);
@@ -198,7 +201,7 @@ p._gangCard = function (playerId, card, actionCode) {
     let playerData = this.playerDatas[playerId],
         handCards = playerData.handCards,
         from = playerId; // 默认来自自己（暗杠、碰后杠）
-    // todo: 其实明杠是没必要整理手牌的，考虑优化
+    // TODO: 其实明杠是没必要整理手牌的，考虑优化
     this._sortHandCard(playerData); // 先整理手牌
     switch (actionCode) {
         case ActionCode.AnGang:
@@ -248,12 +251,12 @@ p._chiCardWith2HandCards = function (playerId, card, twoHandCards) {
 
 
 // 动作执行合法性判断
-// todo: 将独立写一个模块判胡
+// TODO: 将独立写一个模块判胡
 p._canHu = function (playerId, card) {
     let playerData = this.playerDatas[playerId];
     return checkHu(playerData, this.config, card);
 };
-// todo: _canGangCard 和 _canPengCard 代码有大部分重复，考虑是否合并
+// TODO: _canGangCard 和 _canPengCard 代码有大部分重复，考虑是否合并
 /**
  * 检查玩家是否能杠某张牌
  * @return {false|Number} - 不能杠返回false，能杠返回可以杠的ActionCode
@@ -307,7 +310,7 @@ p._canChiCardWith2HandCards = function (card, handCards) {
 };
 
 // 计算玩家可执行的动作
-// todo: 以下方法名的retrieve我都觉得不合适，以后考虑改名
+// TODO: 以下方法名的retrieve我都觉得不合适，以后考虑改名
 // 检查当前玩家能做什么动作
 p._getCurrentPlayerAction = function () {
     let playerId = this.currentPlayerId,
@@ -324,7 +327,7 @@ p._getCurrentPlayerAction = function () {
  * 在当前玩家打出牌后，计算出其他玩家的可执行动作列表，以优先度排序
  */
 // to check: 写完未测试
-// todo: 这里没有考虑一炮多响的情况
+// TODO: 这里没有考虑一炮多响的情况
 p._retrieveOthersActionList = function () {
     let currentPlayerData = this.playerDatas[this.currentPlayerId],
         currentPlayCard = currentPlayerData.playCard,
@@ -377,13 +380,14 @@ p._retrieveGangCard = function (playerId) {
 };
 
 // 检查下一个其他玩家的可执行动作
-// todo: 感觉这个方法命名不好，耦合度很高，考虑优化
+// TODO: 感觉这个方法命名不好，耦合度很高，考虑优化
 p._checkNextOthersAction = function () {
     let playerAction = this.othersActionList.shift();
     if (playerAction === undefined) { // 没有其他玩家可执行动作，进入下一回合
         this.fsm.next();
     } else {
-        // todo: 通知玩家更新界面状态（动作按钮状态更新）
+        // TODO: 通知玩家更新界面状态（动作按钮状态更新）
+        this._sendToPlayer(JSON.stringify(this._getGameState()));
         console.log(`通知玩家: `, playerAction);
     }
 };
@@ -418,7 +422,7 @@ p._getAllHandCards = function (playerData, sort = false) {
     }
 };
 // 整理手牌（如有newCard，则将newCard也整理进手牌中）
-// todo: 效率有待改进
+// TODO: 效率有待改进
 p._sortHandCard = function (playerData, clone = false) {
     let res = clone ? playerData.handCards.concat() : playerData.handCards;
     if (playerData.newCard) {
@@ -430,7 +434,7 @@ p._sortHandCard = function (playerData, clone = false) {
 };
 
 // 关于通信
-// todo: 返回一对某玩家的游戏状态
+// TODO: 返回一对某玩家的游戏状态
 p._getGameState = function (playerId) {
     let self = this;
     // 桌面数据应该是对所有玩家公开的
@@ -439,7 +443,7 @@ p._getGameState = function (playerId) {
         currentPlayerId: this.currentPlayerId,
         state: this.fsm.state
     };
-    // todo: 玩家数据，本人数据公开，其他玩家数据屏蔽（屏蔽考虑加一个私有方法实现）
+    // TODO: 玩家数据，本人数据公开，其他玩家数据屏蔽（屏蔽考虑加一个私有方法实现）
     let playerDatas = {};
     this.playerSequence.forEach(function (pid) {
         let pd = self.playerDatas[pid];
@@ -452,6 +456,12 @@ p._getGameState = function (playerId) {
         };
     });
     return {tableData, playerDatas};
+};
+
+// 通知玩家信息
+p._sendToPlayer = function (msg, playerId) {
+    // TODO: 测试时，直接用this.socket
+    this.socket.emit('news', msg);
 };
 
 // 实现Game的接口
@@ -472,20 +482,20 @@ p.joinIn = function (playerId) {
 p.start = function () {
     let self = this;
     return new Promise((resolve, reject) => {
-        // todo: 重置单局数据
+        // TODO: 重置单局数据
         self._resetCards();
         self._resetPlayerData();
         // 发牌
         self._dealCards();
-        // todo: 通知发牌结果
+        // TODO: 通知发牌结果
         // 整理手牌
         for (let playerId in self.playerDatas) self._sortHandCard(self.playerDatas[playerId]);
-        // todo: 通知整理手牌结果
+        // TODO: 通知整理手牌结果
 
         // 回合制游戏属性初始化
         this.turnCount = 0;
 
-        // todo: 进入等待当前玩家动作状态
+        // TODO: 进入等待当前玩家动作状态
         self.fsm.start();
         // self.state = self.STATE.WAIT_CURRENT_PLAYER_ACTION;
         resolve({'error': false, result: '游戏开始'});
@@ -494,11 +504,11 @@ p.start = function () {
 
 // 玩家动作接口
 // 玩家动作总接口
-// todo: 这里通过状态机统一验证player能否做action，然后再分别调用子action动作进行详细验证
+// TODO: 这里通过状态机统一验证player能否做action，然后再分别调用子action动作进行详细验证
 p.doAction = function (playerId, action, data) {
     let message = '';
-    // todo: 缺少动作合法性判断（动作是否存在）
-    // todo: 这里的错误信息应该更详细
+    // TODO: 缺少动作合法性判断（动作是否存在）
+    // TODO: 这里的错误信息应该更详细
     if (this.fsm.is(STATE.WAIT_PLAYER_ACTION) && playerId !== this.currentPlayerId) {
         message = '在等待当前玩家动作时，非当前玩家请求动作';
     }
@@ -550,10 +560,10 @@ p.gang = function (playerId, card) {
     let actionCode = this._canGangCard(playerId, card);
     if (actionCode) {
         if (actionCode === ActionCode.PengHouGang) {
-            // todo: 碰后杠需要轮询确认是否有人抢杠
+            // TODO: 碰后杠需要轮询确认是否有人抢杠
         } else {
             this._gangCard(playerId, card, actionCode);
-            // todo: 应详细描述是什么杠，杠谁的什么牌
+            // TODO: 应详细描述是什么杠，杠谁的什么牌
             return {'error': false, 'result': `玩家${playerId}杠${card}`};
         }
     } else {

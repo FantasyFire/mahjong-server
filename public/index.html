@@ -26,10 +26,17 @@
       <input id="m" autocomplete="off" /><button>Send</button>
     </form>
     <div id="wrapper" style="position: absolute;top: 50%;left:20%;width:500px"></div>
+    <div class="mahjongTable">
+        <div id="player1" class="playerTable"></div>
+        <div id="player2" class="playerTable"></div>
+        <div id="player3" class="playerTable"></div>
+        <div id="player4" class="playerTable"></div>
+    </div>
 </body>
 <script>
+    var socket = null, currentPlayerId = "", state = "";
     $(function () {
-        var socket = io();
+        socket = io();
         $('form').submit(function(){
             socket.emit('chat message', $('#m').val());
             $('#m').val('');
@@ -38,20 +45,89 @@
 
         socket.on('news', msg => {
             console.log(`收到消息：${msg}`);
-            $('#messages').append(`<li>${msg}</li>`)
+            let json = JSON.parse(msg);
+            currentPlayerId = json.tableData.currentPlayerId;
+            state = json.tableData.state;
+            for (let player in json.playerDatas) {
+                let wrapper = document.querySelector('#'+player);
+                let playerData = json.playerDatas[player];
+                renderPlayerData(wrapper, playerData, player==currentPlayerId);
+            }
         });
     });
 
-    const mount = (wrapper, components) => {
-        components = [].concat(components);
-        components.forEach(component => {
-            wrapper.appendChild(component.renderDOM());
-            component.wrapper = wrapper;
+    function renderPlayerData(wrapper, playerData, canPlayCard) {
+        let str = "";
+        // TODO: player information (headImage nickname etc.)
+        // action
+        str += renderActionCode(playerData.actionCode);
+        // TODO: group cards
+        playerData.groupCards.forEach(gc => {
+            console.log('暂时未解析groupCard, gc: ', gc);
         });
-    };
+        // hand cards
+        str += renderCardGroup('handCards', playerData.handCards, canPlayCard ? 0 : undefined);
+        // new card
+        if (playerData.newCard) {
+            str += renderCardGroup('newCard', playerData.newCard, playerData.handCards.length);
+        }
+        $(wrapper).html(str);
+    }
 
-    mount(document.querySelector('#wrapper'), [
-        new CardGroup
-    ]);
+    function renderCard(number, index) {
+        return `
+            <div class="card" ${index==undefined ? "" : `onclick="playCard(${index})"`}>
+                <div class="text">${number2text(number)}</div>
+            </div>
+        `;
+    }
+
+    function renderCardGroup(id, cards, starti) {
+        cards = [].concat(cards);
+        return `
+            <div id="${id}" class="card-group">
+                ${cards.map((n, i) => renderCard(n, starti==undefined ? undefined : starti+i)).join('')}
+            </div>
+        `;
+    }
+
+    const type2text = {1:"万", 3:"条", 5:"筒", 7:"风", 9:""};
+    const feng2text = {0:"东", 3:"南", 6:"西", 9:"北"};
+    const jian2text = {0:"中", 3:"发", 6:"白"};
+    function number2text(number) {
+        let type = ~~(number/10), n = number%10, text = "";
+        if (type <= 5) {
+            text = n;
+        } else if (type == 7) {
+            text = feng2text[n];
+        } else if (type == 9) {
+            text = jian2text[n];
+        }
+        return text + type2text[type];
+    }
+
+    const actionCode2text = {1:"过", 2:"吃", 4:"碰", 56:"杠", 192:"胡"};
+    function renderActionCode(actionCode) {
+        let actionArray = [];
+        for (let ac in actionCode2text) actionCode&ac!=0 && actionArray.push(actionCode2text[ac]);
+        actionArray.reverse();
+        return `
+            <div class="action-group">
+                ${actionArray.map(ac => renderAction(ac)).join('')}
+            </div>
+        `;
+    }
+
+    function renderAction(action) {
+        return `
+            <div class="action">${action}</div>
+        `;
+    }
+
+    function playCard(index) {
+        let msg = JSON.stringify({playerId: currentPlayerId, action:"playCard", data:index});
+        console.log('发送消息: ', msg)
+        socket.emit('chat message', msg);
+    }
 </script>
 </html>

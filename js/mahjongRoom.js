@@ -5,8 +5,8 @@ const util = require('util');
  * @param {String} - 房间id
  * @param {Function} - 麻将游戏构造函数
  */
-var MahjongRoom = function (roomId, gameConstructor) {
-    Room.call(this, roomId, gameConstructor);
+var MahjongRoom = function (roomId, gameConstructor, socket) {
+    Room.call(this, roomId, gameConstructor, socket);
 };
 
 MahjongRoom.prototype = {
@@ -19,15 +19,17 @@ MahjongRoom.prototype = {
         this.playerSequence.splice(this.playerSequence.indexOf(playerId), 1);
         delete this.playerDatas[playerId];
     },
-    _startGame () {
-        // todo: 构造游戏数据对象，如第几局，有什么算分规则之类的
+    _initGame () {
+        // TODO: 构造游戏数据对象，如第几局，有什么算分规则之类的
         let data = {
             playerSequence: this.playerSequence,
-            
+            socket: this.socket
         };
-        // todo: 构造游戏配置对象，如第几局，有什么算分规则之类的
+        // TODO: 构造游戏配置对象，如第几局，有什么算分规则之类的
         let gameConfig = {};
         this.game = new this.gameConstructor(data, gameConfig);
+    },
+    _startGame () {
         this.game.start();
     },
     // 实现Room的接口
