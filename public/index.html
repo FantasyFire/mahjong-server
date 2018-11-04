@@ -67,7 +67,7 @@
         str += renderCardGroup('playedCards', playerData.playedCards||[]);
         str += '<div class="wrapper">';
             // action
-            str += renderActionCode(playerData.actionCode);
+            str += renderActionCode(playerData.id, playerData.actionCode);
             // TODO: 这里只处理了card，未处理from信息。数据结构：{card:[n,n,n],from:"xxxx"}
             playerData.groupCards.forEach(gc => {
                 str += renderCardGroup('groupCards', gc.card);
@@ -122,19 +122,19 @@
     // actionCode 映射 后端接受的api名
     const actionCode2actionApi = {1:"pass", 2:"chi", 4:"peng", 8:"gang", 16:"gang", 32: "gang", 64:"hu", 128:"hu"};
     const actionCode2text = {1:"过", 2:"吃", 4:"碰", 56:"杠", 192:"胡"};
-    function renderActionCode(actionCode) {
+    function renderActionCode(playerId, actionCode) {
         let actionArray = [];
         // 解析出蕴含的actionCode
         for (let ac in actionCode2text) (actionCode&(ac*1))!=0 && actionArray.push(actionCode&(ac*1));
         actionArray.reverse();
         return `
             <div class="action-group">
-                ${actionArray.map(ac => renderAction(ac)).join('')}
+                ${actionArray.map(ac => renderAction(playerId, ac)).join('')}
             </div>
         `;
     }
 
-    function renderAction(actionCode) {
+    function renderAction(playerId, actionCode) {
         let actionText = '';
         // 找到actionCode对应的文本
         for (let ac in actionCode2text) {
@@ -144,7 +144,7 @@
             }
         }
         return `
-            <div class="action" onclick="doAction(${actionCode})"><span class="action-text">${actionText}</span></div>
+            <div class="action" onclick="doAction('${playerId}',${actionCode})"><span class="action-text">${actionText}</span></div>
         `;
     }
 
@@ -162,8 +162,8 @@
     }
 
     // 发起动作请求（不包括打牌）
-    function doAction(actionCode) {
-        let msg = JSON.stringify({playerId: currentPlayerId, action:actionCode2actionApi[actionCode], data:''});
+    function doAction(playerId, actionCode) {
+        let msg = JSON.stringify({playerId, action:actionCode2actionApi[actionCode], data:''});
         console.log('发送消息: ', msg)
         socket.emit('chat message', msg);
     }

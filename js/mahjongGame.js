@@ -38,7 +38,7 @@ var MahjongGame = function (data, config) {
             {name: 'next', from: STATE.WAIT_OHTERS_ACTION, to: STATE.WAIT_PLAYER_ACTION}
         ],
         methods: {
-            onStart () {
+            onBeforeStart () {
                 console.log('onStart');
                 self._drawCard(self.currentPlayerId);
                 // TODO: 通知更新玩家状态（整个状态）
@@ -49,15 +49,15 @@ var MahjongGame = function (data, config) {
                 // 获取其他玩家可执行动作队列
                 self.othersActionList = self._retrieveOthersActionList();
             },
-            onGang (transition, playerId) {
+            onBeforeGang (transition, playerId) {
                 console.log('onGang');
                 self.currentPlayerId = playerId;
             },
-            onPeng (transition, playerId) {
+            onBeforePeng (transition, playerId) {
                 console.log('onPeng');
                 self.currentPlayerId = playerId;
             },
-            onChi (transition, playerId) {
+            onBeforeChi (transition, playerId) {
                 console.log('onChi');
                 self.currentPlayerId = playerId;
             },
@@ -71,6 +71,7 @@ var MahjongGame = function (data, config) {
             },
             onWaitPlayerAction () {
                 console.log('onWaitPlayerAction');
+                self._clearActionList();
                 let action = self._getCurrentPlayerAction();
                 // TODO: 通知更新玩家状态（整个状态）
                 self._sendToPlayer(JSON.stringify(self._getGameState()));
@@ -147,6 +148,18 @@ p._resetCards = function () {
     this.topIdx = 0;
     this.bottomIdx = this.cards.length - 1;
     this.cardCount = this.cards.length;
+};
+
+// 清空所有人的playerData.actionCode、othersActionList
+p._clearActionList = function () {
+    let self = this;
+    self.playerSequence.forEach(playerId => {
+        let pd = self.playerDatas[playerId];
+        pd.actionCode = 0;
+        // TODO: 把chiList放在playerData里真的很不好，考虑解决
+        pd.chiList = undefined;
+    });
+    self.othersActionList = [];
 };
 
 // 初始化方法
@@ -238,7 +251,7 @@ p._pengCard = function (playerId, card) {
         currentPlayerData = this.playerDatas[from];
     handCards.splice(handCards.indexOf(card), 2); // 去掉自己的2张手牌
     currentPlayerData.playCard = undefined; // 将当前玩家打出的牌去掉
-    playerData.groupCards.push({actionCode: ActionCode.Peng, card, from}); // 组合牌中加入碰的数据
+    playerData.groupCards.push({actionCode: ActionCode.Peng, card: Array(3).fill(card), from}); // 组合牌中加入碰的数据
 };
 /**
  * 玩家吃
@@ -294,7 +307,7 @@ p._canPengCard = function (playerId, card) {
     // to check: 约定玩家手牌已排序
     for (let i = handCards.length; i--; ) {
         if (handCards[i] < card) return false;
-        if (handCards[i] === card) return handCards[i-2] === card;
+        if (handCards[i] === card) return handCards[i-1] === card;
     }
     return false;
 };
