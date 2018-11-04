@@ -43,18 +43,20 @@
             return false;
         });
 
-        socket.on('news', msg => {
-            console.log(`收到消息：${msg}`);
-            let json = JSON.parse(msg);
-            currentPlayerId = json.tableData.currentPlayerId;
-            state = json.tableData.state;
-            for (let player in json.playerDatas) {
-                let wrapper = document.querySelector('#'+player);
-                let playerData = json.playerDatas[player];
-                renderPlayerData(wrapper, playerData, player==currentPlayerId);
-            }
-        });
+        socket.on('news', onNews);
     });
+
+    function onNews(msg) {
+        console.log(`收到消息：${msg}`);
+        let json = JSON.parse(msg);
+        currentPlayerId = json.tableData.currentPlayerId;
+        state = json.tableData.state;
+        for (let player in json.playerDatas) {
+            let wrapper = document.querySelector('#'+player);
+            let playerData = json.playerDatas[player];
+            renderPlayerData(wrapper, playerData, player==currentPlayerId);
+        }
+    }
 
     function renderPlayerData(wrapper, playerData, canPlayCard) {
         let str = "";
