@@ -452,7 +452,8 @@ p._getGameState = function (playerId) {
             groupCards: pd.groupCards,
             handCards: pd.handCards,
             newCard: pd.newCard,
-            playCard: pd.playCard
+            playCard: pd.playCard,
+            playedCards: pd.playedCards
         };
     });
     return {tableData, playerDatas};

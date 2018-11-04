@@ -78,3 +78,9 @@
     float: left;
     padding: 20px;
 }
+
+.wrapper {
+    position: relative;
+    min-width: 100%;
+    float: left;
+}
