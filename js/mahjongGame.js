@@ -4,6 +4,7 @@ const Game = require('./game.js');
 const checkHu = require('./checkHu.js');
 const util = require('util');
 const StateMachine = require('javascript-state-machine');
+const Log = require('./logger.js')();
 
 var MahjongGame = function (data, config) {
     Game.call(this);
@@ -386,7 +387,11 @@ p._checkNextOthersAction = function () {
     if (playerAction === undefined) { // 没有其他玩家可执行动作，进入下一回合
         this.fsm.next();
     } else {
+        let playerData = this.playerDatas[playerAction.playerId];
         // TODO: 通知玩家更新界面状态（动作按钮状态更新）
+        // TODO: 这里将chiList直接放在playerData感觉不够优雅
+        playerData.actionCode = playerAction.actionCode;
+        playerData.chiList = playerAction.chiList;
         this._sendToPlayer(JSON.stringify(this._getGameState()));
         console.log(`通知玩家: `, playerAction);
     }
@@ -462,6 +467,7 @@ p._getGameState = function (playerId) {
 // 通知玩家信息
 p._sendToPlayer = function (msg, playerId) {
     // TODO: 测试时，直接用this.socket
+    Log.log(`send to ${playerId || 'all'}`, msg);
     this.socket.emit('news', msg);
 };
 
