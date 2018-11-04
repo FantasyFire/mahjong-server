@@ -68,9 +68,9 @@
         str += '<div class="wrapper">';
             // action
             str += renderActionCode(playerData.actionCode);
-            // TODO: group cards
+            // TODO: 这里只处理了card，未处理from信息。数据结构：{card:[n,n,n],from:"xxxx"}
             playerData.groupCards.forEach(gc => {
-                console.log('暂时未解析groupCard, gc: ', gc);
+                str += renderCardGroup('groupCards', gc.card);
             });
             // hand cards
             str += renderCardGroup('handCards', playerData.handCards, canPlayCard ? 0 : undefined);
