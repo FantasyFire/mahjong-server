@@ -32,7 +32,6 @@
     var socket = null, currentPlayerId = "", state = "";
     $(function () {
         socket = io();
-
         socket.on('news', onNews);
     });
 1
@@ -114,7 +113,7 @@
     }
 
     // actionCode 映射 后端接受的api名
-    const actionCode2actionApi = {1:"pass", 2:"chi", 4:"peng", 8:"gang", 16:"gang", 32: "gang", 64:"hu", 128:"hu"};
+    const actionCode2actionApi = {1:"pass", 2:"chi", 4:"peng", 8:"gang", 16:"gang", 32: "gang", 56:"gang", 64:"hu", 128:"hu", 192:"hu"};
     const actionCode2text = {1:"过", 2:"吃", 4:"碰", 56:"杠", 192:"胡"};
     function renderActionCode(playerId, actionCode) {
         let actionArray = [];
@@ -130,6 +129,10 @@
 
     function renderAction(playerId, actionCode) {
         let actionText = '';
+        // TODO: 点击事件
+        if (actionCode) {
+            
+        }
         // 找到actionCode对应的文本
         for (let ac in actionCode2text) {
             if ((actionCode&(ac*1))!=0) {

@@ -72,10 +72,10 @@ var MahjongGame = function (data, config) {
             onWaitPlayerAction () {
                 console.log('onWaitPlayerAction');
                 self._clearActionList();
-                let action = self._getCurrentPlayerAction();
+                let playerData = self._updateCurrentPlayerAction();
                 // TODO: 通知更新玩家状态（整个状态）
                 self._sendToPlayer(JSON.stringify(self._getGameState()));
-                console.log(`通知玩家${action.playerId}可执行动作: `, action);
+                console.log(`通知玩家${self.currentPlayerId}可执行动作: `, playerData.actionCode);
             },
             onWaitOthersAction () {
                 console.log('onWaitOthersAction');
@@ -328,21 +328,21 @@ p._canChiCardWith2HandCards = function (card, handCards) {
 };
 
 // 计算玩家可执行的动作
-// TODO: 以下方法名的retrieve我都觉得不合适，以后考虑改名
-// 检查当前玩家能做什么动作
-p._getCurrentPlayerAction = function () {
+// 检查当前玩家能做什么动作，检测胡（自摸）、杠（暗杠、补杠）
+p._updateCurrentPlayerAction = function () {
     let playerId = this.currentPlayerId,
-        result = {playerId},
+        playerData = this.playerDatas[playerId]
         actionCode = 0;
     this._canHu(playerId) && (actionCode += ActionCode.Hu);
     let gangList = this._retrieveGangCard(playerId);
-    gangList.length > 0 && (actionCode += ActionCode.Gang, result.gangList = gangList);
-    result.actionCode = actionCode;
-    return result;
+    gangList.length > 0 && (actionCode += ActionCode.Gang, playerData.gangList = gangList);
+    playerData.actionCode = actionCode;
+    return playerData;
 };
 /**
  * 在当前玩家打出牌后，计算出其他玩家的可执行动作列表，以优先度排序
  */
+// TODO: 以下方法名的retrieve我都觉得不合适，以后考虑改名
 // to check: 写完未测试
 // TODO: 这里没有考虑一炮多响的情况
 p._retrieveOthersActionList = function () {
@@ -474,7 +474,9 @@ p._getGameState = function (playerId) {
             handCards: pd.handCards,
             newCard: pd.newCard,
             playCard: pd.playCard,
-            playedCards: pd.playedCards
+            playedCards: pd.playedCards,
+            chiList: pd.chiList,
+            gangList: pd.gangList
         };
     });
     return {tableData, playerDatas};
