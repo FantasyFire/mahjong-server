@@ -111,7 +111,7 @@
     const actionCode2text = {1:"过", 2:"吃", 4:"碰", 56:"杠", 192:"胡"};
     function renderActionCode(actionCode) {
         let actionArray = [];
-        for (let ac in actionCode2text) actionCode&ac!=0 && actionArray.push(actionCode2text[ac]);
+        for (let ac in actionCode2text) (actionCode&(ac*1))!=0 && actionArray.push(actionCode2text[ac]);
         actionArray.reverse();
         return `
             <div class="action-group">
@@ -122,7 +122,7 @@
 
     function renderAction(action) {
         return `
-            <div class="action">${action}</div>
+            <div class="action"><span class="action-text">${action}</span></div>
         `;
     }
 
