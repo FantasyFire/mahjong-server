@@ -5,6 +5,7 @@ const checkHu = require('./checkHu.js');
 const util = require('util');
 const StateMachine = require('javascript-state-machine');
 const Log = require('./logger.js')();
+const Cheat = require('./cheatData.js');
 
 var MahjongGame = function (data, config) {
     Game.call(this);
@@ -14,7 +15,8 @@ var MahjongGame = function (data, config) {
     let defaultConfig = {
         needPlayerCount: 4,
         cards: [11,11,11,11,12,12,12,12,13,13,13,13,14,14,14,14,15,15,15,15,16,16,16,16,17,17,17,17,18,18,18,18,19,19,19,19,31,31,31,31,32,32,32,32,33,33,33,33,34,34,34,34,35,35,35,35,36,36,36,36,37,37,37,37,38,38,38,38,39,39,39,39,51,51,51,51,52,52,52,52,53,53,53,53,54,54,54,54,55,55,55,55,56,56,56,56,57,57,57,57,58,58,58,58,59,59,59,59,70,70,70,70,73,73,73,73,76,76,76,76,79,79,79,79,90,90,90,90,93,93,93,93,96,96,96,96],
-        handCardCount: 13
+        handCardCount: 13,
+        cheat: 0
     };
     this.config = Object.assign(defaultConfig, config || {});
     // 重置游戏变量
@@ -141,6 +143,7 @@ p._getCardRemain = function () {
 p._resetCards = function () {
     // 初始化麻将牌
     this.cards = GU.shuffle([].concat(this.config.cards));
+    this.config.cheat && (this.cards = Cheat.getCheatCards(this.config, this.config.cheat));
     this.topIdx = 0;
     this.bottomIdx = this.cards.length - 1;
     this.cardCount = this.cards.length;
