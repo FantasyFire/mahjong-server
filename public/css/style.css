@@ -7,6 +7,15 @@
     float: left;
 }
 
+.card-group::before, .card-group::after {
+    content: "";
+    display: table;
+}
+
+.card-group::after {
+    clear: both;
+}
+
 .card {
     position: relative;
     float: left;
@@ -32,6 +41,15 @@
     min-height: 50px;
 }
 
+.action-group::before, .action-group::after {
+    content: "";
+    display: table;
+}
+
+.action-group::after {
+    clear: both;
+}
+
 .action {
     position: relative;
     float: left;
@@ -45,6 +63,7 @@
     position: relative;
     width: 100%;
     padding: 20px;
+    overflow: hidden;
 }
 
 .playerCards {
