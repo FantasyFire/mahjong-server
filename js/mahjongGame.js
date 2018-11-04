@@ -158,6 +158,7 @@ p._clearActionList = function () {
         pd.actionCode = 0;
         // TODO: 把chiList放在playerData里真的很不好，考虑解决
         pd.chiList = undefined;
+        pd.gangList = undefined;
     });
     self.othersActionList = [];
 };
@@ -331,7 +332,6 @@ p._canChiCardWith2HandCards = function (card, handCards) {
 // 检查当前玩家能做什么动作
 p._getCurrentPlayerAction = function () {
     let playerId = this.currentPlayerId,
-        currentPlayCard = this.playerDatas[playerId],
         result = {playerId},
         actionCode = 0;
     this._canHu(playerId) && (actionCode += ActionCode.Hu);
@@ -437,8 +437,8 @@ p._getAllHandCards = function (playerData, sort = false) {
     if (sort) {
         return p._sortHandCard(playerData, true);
     } else {
-        let allHandCards = playerData.handCards;
-        playerData.newCard !== undefined && allHandCards.concat(playerData.newCard);
+        let allHandCards = [].concat(playerData.handCards);
+        playerData.newCard !== undefined && allHandCards.push(playerData.newCard);
         return allHandCards;
     }
 };
