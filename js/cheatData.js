@@ -4,8 +4,8 @@ const GU = require('./gameUtils.js');
 let cheat = [];
 // 1：碰
 cheat[1] = {
-    p1:[32],
-    p2:[32,32],
+    p1:[32,11,11],
+    p2:[32,32,11],
 };
 
 // 返回第index组作弊卡序

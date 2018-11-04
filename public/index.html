@@ -21,11 +21,6 @@
 <script src="lib/jquery-1.11.1.js"></script>
 <script src="js/component.js"></script>
 <body>
-    <ul id="messages"></ul>
-    <form action="">
-      <input id="m" autocomplete="off" /><button>Send</button>
-    </form>
-    <div id="wrapper" style="position: absolute;top: 50%;left:20%;width:500px"></div>
     <div class="mahjongTable">
         <div id="player1" class="playerTable"></div>
         <div id="player2" class="playerTable"></div>
@@ -37,15 +32,10 @@
     var socket = null, currentPlayerId = "", state = "";
     $(function () {
         socket = io();
-        $('form').submit(function(){
-            socket.emit('chat message', $('#m').val());
-            $('#m').val('');
-            return false;
-        });
 
         socket.on('news', onNews);
     });
-
+1
     function onNews(msg) {
         console.log(`收到消息：${msg}`);
         let json = JSON.parse(msg);
@@ -66,8 +56,12 @@
         // played cards
         str += renderCardGroup('playedCards', playerData.playedCards||[]);
         str += '<div class="wrapper">';
+            // playCard
+            str += renderCardGroup('playCard', playerData.playCard||[]);
             // action
             str += renderActionCode(playerData.id, playerData.actionCode);
+        str += '</div>';
+        str += '<div class="wrapper">';
             // TODO: 这里只处理了card，未处理from信息。数据结构：{card:[n,n,n],from:"xxxx"}
             playerData.groupCards.forEach(gc => {
                 str += renderCardGroup('groupCards', gc.card);
