@@ -395,7 +395,7 @@ p._retrieveChiList = function (playerId, card) {
 p._retrieveGangCard = function (playerId) {
     let playerData = this.playerDatas[playerId],
         cardCount = GU.countWord(this._getAllHandCards(playerData)), // 统计出手中各牌的数量
-        result = GU.objFilter(cardCount, count => count==4).map(kvp => ({actionCode:ActionCode.AnGang, card:kvp.key})); // 手上有4张的牌
+        result = GU.objFilter(cardCount, count => count==4).map(kvp => ({actionCode:ActionCode.AnGang, card:kvp.key*1})); // 手上有4张的牌
     // 考虑碰后杠
     return result.concat(playerData.groupCards.filter(gc => gc.actionCode===ActionCode.Peng && cardCount[gc.card]).map(gc => ({actionCode:ActionCode.PengHouGang, card:gc.card})));
 };
@@ -480,7 +480,7 @@ p._getGameState = function (playerId) {
             playCard: pd.playCard,
             playedCards: pd.playedCards,
             chiList: pd.chiList,
-            gangList: pd.gangList.map(g => g.card) // 客户端不需要知道这个是哪种杠（真的不需要吗？）
+            gangList: (pd.gangList||[]).map(g => g.card) // 客户端不需要知道这个是哪种杠（真的不需要吗？）
         };
     });
     return {tableData, playerDatas};

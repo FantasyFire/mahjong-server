@@ -29,7 +29,21 @@
     </div>
 </body>
 <script>
-    var socket = null, currentPlayerId = "", state = "";
+    // 可执行动作码
+    const ActionCode = {
+        ZiMo: 128, // 自摸
+        DianPao: 64, // 点炮
+        Hu: 192, // 胡
+        AnGang: 32, // 暗杠
+        MingGang: 16, // 明杠
+        PengHouGang: 8, // 碰后杠
+        Gang: 56, // 杠
+        Peng: 4, // 碰
+        Chi: 2, // 吃
+        Pass: 1 // 过
+    };
+
+    var socket = null, currentPlayerId = "", state = "", gameData = null;
     $(function () {
         socket = io();
         socket.on('news', onNews);
@@ -37,7 +51,7 @@
 1
     function onNews(msg) {
         console.log(`收到消息：${msg}`);
-        let json = JSON.parse(msg);
+        let json = gameData = JSON.parse(msg);
         currentPlayerId = json.tableData.currentPlayerId;
         state = json.tableData.state;
         for (let player in json.playerDatas) {
@@ -55,6 +69,8 @@
         // played cards
         str += renderCardGroup('playedCards', playerData.playedCards||[]);
         str += '<div class="wrapper">';
+            // actionDetail
+            str += renderCardGroup(playerData.id + '_actionDetail', []);
             // playCard
             str += renderCardGroup('playCard', playerData.playCard||[]);
             // action
@@ -121,17 +137,20 @@
         for (let ac in actionCode2text) (actionCode&(ac*1))!=0 && actionArray.push(actionCode&(ac*1));
         actionArray.reverse();
         return `
-            <div class="action-group">
+            <div id="${playerId}_actionCodeGroup" class="action-group">
                 ${actionArray.map(ac => renderAction(playerId, ac)).join('')}
             </div>
         `;
     }
 
     function renderAction(playerId, actionCode) {
-        let actionText = '', data = '';
+        let actionText = '', onclick = '';
         // TODO: 点击事件
-        if (actionCode) {
-            
+        // 吃、杠，弹出选择列表
+        if (actionCode&ActionCode.Chi || actionCode&ActionCode.Gang) {
+            onclick = `showActionDetail('${playerId}',${actionCode});$('#${playerId}_actionCodeGroup').html('')`;
+        } else {
+            onclick = `doAction('${playerId}',${actionCode},'')`;
         }
         // 找到actionCode对应的文本
         for (let ac in actionCode2text) {
@@ -141,7 +160,7 @@
             }
         }
         return `
-            <div class="action" onclick="doAction('${playerId}',${actionCode}, ${data})"><span class="action-text">${actionText}</span></div>
+            <div class="action" onclick="${onclick}"><span class="action-text">${actionText}</span></div>
         `;
     }
 
@@ -160,9 +179,25 @@
 
     // 发起动作请求（不包括打牌）
     function doAction(playerId, actionCode, data) {
-        let msg = JSON.stringify({playerId, action:actionCode2actionApi[actionCode], data:''});
+        let msg = JSON.stringify({playerId, action:actionCode2actionApi[actionCode], data});
         console.log('发送消息: ', msg)
         socket.emit('chat message', msg);
+    }
+
+    // 展示吃/杠选择
+    function showActionDetail(playerId, actionCode) {
+        let playerData = gameData.playerDatas[playerId];
+        let content = '';
+        if (actionCode&ActionCode.Chi) content = renderChiList(playerId, playerData.chiList);
+        if (actionCode&ActionCode.Gang) content = renderGangList(playerId, playerData.gangList);
+        $('#'+playerId+'_actionDetail').html(content);
+    }
+    function renderChiList(playerId, chiList) {
+        return chiList.map((c, i) => `<div><div class="clickLayer" onclick="doAction('${playerId}',${ActionCode.Chi},${i})"></div>${renderCardGroup(`chi_${i}`, c)}</div>`);
+    }
+
+    function renderGangList(playerId, gangList) {
+        return gangList.map((c, i) => `<div><div class="clickLayer" onclick="doAction('${playerId}',${ActionCode.Gang},${i})"></div>${renderCardGroup(`gang_${i}`, c)}</div>`);
     }
 </script>
 </html>
