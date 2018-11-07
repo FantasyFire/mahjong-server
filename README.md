@@ -146,4 +146,9 @@
            吃碰杠 什么牌/组合（index）
 前端--------------------------->服务端
 
-服务端判断该玩家是否有这个chiList/gangList/pengList（目前没有）
+服务端判断该玩家是否有这个chiList/gangList
+
+关于暗杠后死掉的问题：
+fsm 对于A->A 不会触发 onA 的事件
+而且对于碰后杠，如果考虑抢杠胡，其实对于gang事件不一定是waitPlayerAction->waitPlayerAction
+有可能是waitPlayerAction->gameOver 考虑是否需要引入一个新的状态？
