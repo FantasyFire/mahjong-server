@@ -354,7 +354,10 @@ p._retrieveOthersActionList = function () {
         let actionCode = 0,
             r = {playerId};
         this._canHu(playerId, currentPlayCard) && (actionCode += ActionCode.Hu);
-        this._canGangCard(playerId, currentPlayCard) && (actionCode += ActionCode.Gang);
+        if (this._canGangCard(playerId, currentPlayCard)) {
+            actionCode += ActionCode.Gang;
+            r.gangList = [{actionCode:ActionCode.PengHouGang, card:currentPlayCard}];
+        }
         this._canPengCard(playerId, currentPlayCard) && (actionCode += ActionCode.Peng);
         let chiList = this._getNextPlayerId()===playerId ? this._retrieveChiList(playerId, currentPlayCard) : [];
         chiList.length > 0 && (actionCode += ActionCode.Chi, r.chiList = chiList);
@@ -386,14 +389,15 @@ p._retrieveChiList = function (playerId, card) {
     return res;
 };
 /**
- * 获取玩家能暗杠的牌
+ * 获取玩家能暗杠/碰后杠的牌
+ * @return {Array.<Object>} - 形如 [{actionCode:32,card:5}]
  */
 p._retrieveGangCard = function (playerId) {
     let playerData = this.playerDatas[playerId],
         cardCount = GU.countWord(this._getAllHandCards(playerData)), // 统计出手中各牌的数量
-        result = GU.objFilter(cardCount, count => count==4).map(kvp => kvp.key); // 手上有4张的牌
+        result = GU.objFilter(cardCount, count => count==4).map(kvp => ({actionCode:ActionCode.AnGang, card:kvp.key})); // 手上有4张的牌
     // 考虑碰后杠
-    return result.concat(playerData.groupCards.filter(gc => gc.actionCode===ActionCode.Peng && cardCount[gc.card]).map(gc => gc.card))
+    return result.concat(playerData.groupCards.filter(gc => gc.actionCode===ActionCode.Peng && cardCount[gc.card]).map(gc => ({actionCode:ActionCode.PengHouGang, card:gc.card})));
 };
 
 // 检查下一个其他玩家的可执行动作
@@ -476,7 +480,7 @@ p._getGameState = function (playerId) {
             playCard: pd.playCard,
             playedCards: pd.playedCards,
             chiList: pd.chiList,
-            gangList: pd.gangList
+            gangList: pd.gangList.map(g => g.card) // 客户端不需要知道这个是哪种杠（真的不需要吗？）
         };
     });
     return {tableData, playerDatas};
@@ -579,20 +583,21 @@ p.playCard = function (playerId, cardIndex) {
 /**
  * 杠（明杠、暗杠、碰后杠）
  * @param {String} playerId - 玩家id
- * @param {Number} card - 卡牌
+ * @param {Number} index - 第index种杠法
  */
-p.gang = function (playerId, card) {
-    let actionCode = this._canGangCard(playerId, card);
-    if (actionCode) {
+p.gang = function (playerId, index) {
+    let playerData = this.playerDatas[playerId],
+        gangData = (playerData.gangList||[])[index];
+    if (gangData) {
+        let actionCode = gangData.actionCode, card = gangData.card;
         if (actionCode === ActionCode.PengHouGang) {
             // TODO: 碰后杠需要轮询确认是否有人抢杠
-        } else {
-            this._gangCard(playerId, card, actionCode);
-            // TODO: 应详细描述是什么杠，杠谁的什么牌
-            return {'error': false, 'result': `玩家${playerId}杠${card}`};
         }
+        this._gangCard(playerId, card, actionCode);
+        // TODO: 应详细描述是什么杠，杠谁的什么牌
+        return {'error': false, 'result': `玩家${playerId}杠${card}`};
     } else {
-        return {'error': true, 'result': `玩家${playerId}不满足杠的条件`};
+        return {'error': true, 'result': `玩家${playerId}不存在第${index}种杠法，playerData：${JSON.stringify(playerData)}`};
     }
 };
 /**
@@ -601,8 +606,9 @@ p.gang = function (playerId, card) {
  */
 p.peng = function (playerId) {
     let currentPlayerData = this.playerDatas[this.currentPlayerId],
-        card = currentPlayerData.playCard;
-    if (this._canPengCard(playerId, card)) {
+        card = currentPlayerData.playCard,
+        playerData = this.playerDatas[playerId];
+    if (playerData.actionCode&ActionCode.Peng != 0) {
         this._pengCard(playerId, card);
         return {'error': false, 'result': `玩家${playerId}碰${card}玩家${this.currentPlayerId}打出的牌${card}`};
     } else {
@@ -612,19 +618,16 @@ p.peng = function (playerId) {
 /**
  * 吃
  * @param {String} playerId - 玩家id
- * @param {Array.<Number>} handCards - 长度为2的手牌数组
+ * @param {Array.<Number>} index - 第index种吃法
  */
-p.chi = function (playerId, handCards) {
-    let currentPlayerData = this.playerDatas[this.currentPlayerId],
-        card = currentPlayerData.playCard;
+p.chi = function (playerId, index) {
     if (this._getNextPlayerId() !== playerId) {
         return {'error': true, 'result': `玩家非当前玩家的下家`};
     }
-    if ((!handCards instanceof Array) || handCards.length!==2) {
-        return {'error': true, 'result': `玩家${playerId}请求吃动作时，传入handCards不为数组或长度不为2`};
-    }
-    if (this._canChiCardWith2HandCards(card, handCards)) {
-        this._chiCardWith2HandCards(playerId, card, handCards);
+    let playerData = this.playerDatas[playerId],
+        chiData = (playerData.chiList||[])[index];
+    if (chiData) {
+        this._chiCardWith2HandCards(playerId, chiData[0], chiData.slice(1));
         return {'error': false, 'result': `玩家${playerId}吃${card}玩家${this.currentPlayerId}打出的牌${card}`};
     } else {
         return {'error': true, 'result': `玩家${playerId}不满足吃的条件，当前玩家${this.currentPlayerId}打出牌${card}`};
