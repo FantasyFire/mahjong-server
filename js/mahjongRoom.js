@@ -27,7 +27,7 @@ MahjongRoom.prototype = {
         };
         // TODO: 构造游戏配置对象，如第几局，有什么算分规则之类的
         let gameConfig = {
-            cheat:1
+            cheat:2
         };
         this.game = new this.gameConstructor(data, gameConfig);
     },

@@ -3,7 +3,10 @@ const StateMachine = require('javascript-state-machine');
 let fsm = new StateMachine({
     init: 'A',
     transitions: [
-        {name: 'start', from: 'A', to: 'B'}
+        {name: 'test', from: 'A', to: 'B'},
+        {name: 'test', from: 'B', to: 'A'},
+        {name: 'AtoB', from: 'A', to: 'B'},
+        {name: 'BtoA', from: 'B', to: 'A'}
     ],
     methods: {
         onStart () {
@@ -18,4 +21,5 @@ let fsm = new StateMachine({
     }
 });
 
-fsm.start();
+fsm.test();
+fsm.test();

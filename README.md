@@ -152,3 +152,7 @@
 fsm 对于A->A 不会触发 onA 的事件
 而且对于碰后杠，如果考虑抢杠胡，其实对于gang事件不一定是waitPlayerAction->waitPlayerAction
 有可能是waitPlayerAction->gameOver 考虑是否需要引入一个新的状态？
+
+一个潜在问题，waitOthersAction时，没有记录当前轮询玩家index，断线重连可能出问题
+
+考虑抢杠胡一炮多响

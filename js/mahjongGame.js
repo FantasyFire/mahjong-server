@@ -264,7 +264,7 @@ p._chiCardWith2HandCards = function (playerId, card, twoHandCards) {
         currentPlayerData = this.playerDatas[from];
     twoHandCards.forEach(c => handCards.splice(handCards.indexOf(c), 1)); // 去掉2张手牌
     currentPlayerData.playCard = undefined; // 将当前玩家打出的牌去掉
-    playerData.groupCard.push({actionCode: ActionCode.Chi, cards: [card].concat(twoHandCards), from}); // 组合牌中加入吃的数据
+    playerData.groupCards.push({actionCode: ActionCode.Chi, card: [card].concat(twoHandCards), from}); // 组合牌中加入吃的数据
 };
 
 
@@ -628,9 +628,9 @@ p.chi = function (playerId, index) {
         chiData = (playerData.chiList||[])[index];
     if (chiData) {
         this._chiCardWith2HandCards(playerId, chiData[0], chiData.slice(1));
-        return {'error': false, 'result': `玩家${playerId}吃${card}玩家${this.currentPlayerId}打出的牌${card}`};
+        return {'error': false, 'result': `玩家${playerId}吃玩家${this.currentPlayerId}打出的牌${chiData[0]}`};
     } else {
-        return {'error': true, 'result': `玩家${playerId}不满足吃的条件，当前玩家${this.currentPlayerId}打出牌${card}`};
+        return {'error': true, 'result': `玩家${playerId}不满足吃的条件，当前玩家${this.currentPlayerId}`};
     }
 };
 
