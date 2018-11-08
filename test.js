@@ -17,6 +17,9 @@ let fsm = new StateMachine({
         },
         onB () {
             console.log('onB');
+        },
+        onTest(transition) {
+            console.log(transition);
         }
     }
 });

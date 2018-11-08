@@ -48,10 +48,23 @@ var MahjongGame = function (data, config) {
                 console.log('onBeforePlayCard');
                 // 获取其他玩家可执行动作队列
                 self.othersActionList = self._retrieveOthersActionList();
+                // 这里应该先将当前玩家打牌的状态更新到客户端
+                self._sendToPlayer(JSON.stringify(self._getGameState()));
             },
             onBeforeGang (transition, playerId) {
                 console.log('onGang');
                 self.currentPlayerId = playerId;
+                // 杠后抽牌
+                self._drawGangCard(self.currentPlayerId);
+                // 对于暗杠/碰后杠，重新检测当前玩家可执行动作，并告知
+                // TODO: 由于fsm中从A转换到A不会触发onA事件，以下代码实际是onWaitPlayerAction的逻辑，考虑怎么优雅地解决这个问题
+                if (transition.from === STATE.WAIT_PLAYER_ACTION) {
+                    self._clearActionList();
+                    let playerData = self._updateCurrentPlayerAction();
+                    // TODO: 通知更新玩家状态（整个状态）
+                    self._sendToPlayer(JSON.stringify(self._getGameState()));
+                    console.log(`通知玩家${self.currentPlayerId}可执行动作: `, playerData.actionCode);
+                }
             },
             onBeforePeng (transition, playerId) {
                 console.log('onPeng');
@@ -60,6 +73,13 @@ var MahjongGame = function (data, config) {
             onBeforeChi (transition, playerId) {
                 console.log('onChi');
                 self.currentPlayerId = playerId;
+            },
+            onBeforePass (transition, playerId) {
+                console.log('onPass');
+                // TODO: 与暗杠/碰后杠类似的问题，由于fsm的原因，下面的代码实际是onWaitOthersAction，考虑优化
+                setTimeout(function () {
+                    self._checkNextOthersAction();
+                }, 1000);
             },
             onBeforeNext () {
                 console.log('onBeforeNext');
@@ -200,6 +220,10 @@ p._dealCards = function () {
 p._drawCard = function (playerId) {
     this.playerDatas[playerId].newCard = this._getTopCard();
 };
+// 杠后抽牌
+p._drawGangCard = function (playerId) {
+    this.playerDatas[playerId].newCard = this._getBottomCard();
+}
 /**
  * 玩家打出一张牌
  * @param {String} playerData - 玩家数据
@@ -252,7 +276,7 @@ p._pengCard = function (playerId, card) {
         currentPlayerData = this.playerDatas[from];
     handCards.splice(handCards.indexOf(card), 2); // 去掉自己的2张手牌
     currentPlayerData.playCard = undefined; // 将当前玩家打出的牌去掉
-    playerData.groupCards.push({actionCode: ActionCode.Peng, card: Array(3).fill(card), from}); // 组合牌中加入碰的数据
+    playerData.groupCards.push({actionCode: ActionCode.Peng, card: card, from}); // 组合牌中加入碰的数据
 };
 /**
  * 玩家吃
@@ -369,7 +393,7 @@ p._retrieveOthersActionList = function () {
     }
     // to check: 多个人胡且不能一炮多响时，能否按正确的顺序排序？
     // 按actionCode大小排序
-    return res.sort((a, b) => a.actionCode-b.actionCode);
+    return res.sort((a, b) => b.actionCode-a.actionCode);
 };
 /**
  * 获取玩家能吃的组合
@@ -397,7 +421,7 @@ p._retrieveGangCard = function (playerId) {
         cardCount = GU.countWord(this._getAllHandCards(playerData)), // 统计出手中各牌的数量
         result = GU.objFilter(cardCount, count => count==4).map(kvp => ({actionCode:ActionCode.AnGang, card:kvp.key*1})); // 手上有4张的牌
     // 考虑碰后杠
-    return result.concat(playerData.groupCards.filter(gc => gc.actionCode===ActionCode.Peng && cardCount[gc.card]).map(gc => ({actionCode:ActionCode.PengHouGang, card:gc.card})));
+    return result.concat(playerData.groupCards.filter(gc => gc.actionCode===ActionCode.Peng && cardCount[gc.card]).map(gc => ({actionCode:ActionCode.PengHouGang, card:gc.card, from:gc.from})));
 };
 
 // 检查下一个其他玩家的可执行动作
@@ -608,7 +632,7 @@ p.peng = function (playerId) {
     let currentPlayerData = this.playerDatas[this.currentPlayerId],
         card = currentPlayerData.playCard,
         playerData = this.playerDatas[playerId];
-    if (playerData.actionCode&ActionCode.Peng != 0) {
+    if (playerData.actionCode&ActionCode.Peng) {
         this._pengCard(playerId, card);
         return {'error': false, 'result': `玩家${playerId}碰${card}玩家${this.currentPlayerId}打出的牌${card}`};
     } else {
@@ -631,6 +655,20 @@ p.chi = function (playerId, index) {
         return {'error': false, 'result': `玩家${playerId}吃玩家${this.currentPlayerId}打出的牌${chiData[0]}`};
     } else {
         return {'error': true, 'result': `玩家${playerId}不满足吃的条件，当前玩家${this.currentPlayerId}`};
+    }
+};
+
+/**
+ * 过
+ * @param {String} playerId - 玩家id
+ */
+p.pass = function (playerId) {
+    // 除了合法性检测不需要干别的事
+    let playerData = this.playerDatas[playerId];
+    if (playerData.actionCode&ActionCode.Pass) {
+        return {'error': false, 'result': `玩家${playerId}跳过，他当前可执行动作为${playerData.actionCode}`};
+    } else {
+        return {'error': true, 'result': `玩家${playerId}不可执行过动作`};
     }
 };
 

@@ -79,7 +79,11 @@
         str += '<div class="wrapper">';
             // TODO: 这里只处理了card，未处理from信息。数据结构：{card:[n,n,n],from:"xxxx"}
             playerData.groupCards.forEach(gc => {
-                str += renderCardGroup('groupCards', gc.card);
+                let cards = gc.card;
+                // TODO: 这里应详细区分各种杠
+                if (gc.actionCode&ActionCode.Gang) cards = Array(4).fill(gc.card);
+                if (gc.actionCode&ActionCode.Peng) cards = Array(3).fill(gc.card);
+                str += renderCardGroup('groupCards', cards);
             });
             // hand cards
             str += renderCardGroup('handCards', playerData.handCards, canPlayCard ? 0 : undefined);
@@ -166,7 +170,7 @@
 
     function renderPlayerInfo(playerData) {
         return `
-            <div class="wrapper">${playerData.id}</div>
+            <div class="wrapper" ${currentPlayerId==playerData.id?'style="font-weight:bold;color:#f00"':''}>${playerData.id}</div>
         `;
     }
 
