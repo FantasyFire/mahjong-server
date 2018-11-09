@@ -16,7 +16,7 @@ var MahjongGame = function (data, config) {
         needPlayerCount: 4,
         cards: [11,11,11,11,12,12,12,12,13,13,13,13,14,14,14,14,15,15,15,15,16,16,16,16,17,17,17,17,18,18,18,18,19,19,19,19,31,31,31,31,32,32,32,32,33,33,33,33,34,34,34,34,35,35,35,35,36,36,36,36,37,37,37,37,38,38,38,38,39,39,39,39,51,51,51,51,52,52,52,52,53,53,53,53,54,54,54,54,55,55,55,55,56,56,56,56,57,57,57,57,58,58,58,58,59,59,59,59,70,70,70,70,73,73,73,73,76,76,76,76,79,79,79,79,90,90,90,90,93,93,93,93,96,96,96,96],
         handCardCount: 13,
-        cheat: 0
+        cheat: 4
     };
     this.config = Object.assign(defaultConfig, config || {});
     // 重置游戏变量
@@ -59,7 +59,8 @@ var MahjongGame = function (data, config) {
                 // 对于暗杠/碰后杠，重新检测当前玩家可执行动作，并告知
                 // TODO: 由于fsm中从A转换到A不会触发onA事件，以下代码实际是onWaitPlayerAction的逻辑，考虑怎么优雅地解决这个问题
                 if (transition.from === STATE.WAIT_PLAYER_ACTION) {
-                    self._clearActionList();
+                    self._clearActionData();
+                    self.othersActionList = [];
                     let playerData = self._updateCurrentPlayerAction();
                     // TODO: 通知更新玩家状态（整个状态）
                     self._sendToPlayer(JSON.stringify(self._getGameState()));
@@ -91,7 +92,8 @@ var MahjongGame = function (data, config) {
             },
             onWaitPlayerAction () {
                 console.log('onWaitPlayerAction');
-                self._clearActionList();
+                self._clearActionData();
+                self.othersActionList = [];
                 let playerData = self._updateCurrentPlayerAction();
                 // TODO: 通知更新玩家状态（整个状态）
                 self._sendToPlayer(JSON.stringify(self._getGameState()));
@@ -169,18 +171,19 @@ p._resetCards = function () {
     this.bottomIdx = this.cards.length - 1;
     this.cardCount = this.cards.length;
 };
-
-// 清空所有人的playerData.actionCode、othersActionList
-p._clearActionList = function () {
-    let self = this;
-    self.playerSequence.forEach(playerId => {
+/**
+ * 清空玩家的playerData.actionCode、othersActionList
+ * @param {String} playerId - 需要情况的玩家id，若不传则清除所有玩家的可执行动作
+ */
+p._clearActionData = function (playerId) {
+    let self = this, playerIds = playerId ? [playerId] : self.playerSequence;
+    playerIds.forEach(playerId => {
         let pd = self.playerDatas[playerId];
         pd.actionCode = 0;
         // TODO: 把chiList放在playerData里真的很不好，考虑解决
         pd.chiList = undefined;
         pd.gangList = undefined;
     });
-    self.othersActionList = [];
 };
 
 // 初始化方法
