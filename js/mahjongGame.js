@@ -16,10 +16,11 @@ var MahjongGame = function (data, config) {
         needPlayerCount: 4,
         cards: [11,11,11,11,12,12,12,12,13,13,13,13,14,14,14,14,15,15,15,15,16,16,16,16,17,17,17,17,18,18,18,18,19,19,19,19,31,31,31,31,32,32,32,32,33,33,33,33,34,34,34,34,35,35,35,35,36,36,36,36,37,37,37,37,38,38,38,38,39,39,39,39,51,51,51,51,52,52,52,52,53,53,53,53,54,54,54,54,55,55,55,55,56,56,56,56,57,57,57,57,58,58,58,58,59,59,59,59,70,70,70,70,73,73,73,73,76,76,76,76,79,79,79,79,90,90,90,90,93,93,93,93,96,96,96,96],
         handCardCount: 13,
-        cheat: 4
+        cheat: 3
     };
     this.config = Object.assign(defaultConfig, config || {});
     // 重置游戏变量
+    // TODO: 不应该在构造的时候初始化，应该再start里初始化
     this.othersActionList = []; // 当前玩家打牌后，其他玩家的可执行动作列表
     // 重写游戏状态
     // 使用 javascript-state-machine 做状态机
@@ -77,6 +78,7 @@ var MahjongGame = function (data, config) {
             },
             onBeforePass (transition, playerId) {
                 console.log('onPass');
+                self._clearActionData(self._getOtherPlayerIdsByOrder());
                 // TODO: 与暗杠/碰后杠类似的问题，由于fsm的原因，下面的代码实际是onWaitOthersAction，考虑优化
                 setTimeout(function () {
                     self._checkNextOthersAction();
@@ -159,12 +161,14 @@ p._getBottomCard = function (card) {
     return card;
 };
 
+// 获取剩余可抽牌数
 p._getCardRemain = function () {
     return this.cardCount;
 };
 
+// 初始化麻将牌相关数据
+// 根据config.cheat决定是否使用作弊数据
 p._resetCards = function () {
-    // 初始化麻将牌
     this.cards = GU.shuffle([].concat(this.config.cards));
     this.config.cheat && (this.cards = Cheat.getCheatCards(this.config, this.config.cheat));
     this.topIdx = 0;
@@ -172,11 +176,11 @@ p._resetCards = function () {
     this.cardCount = this.cards.length;
 };
 /**
- * 清空玩家的playerData.actionCode、othersActionList
- * @param {String} playerId - 需要情况的玩家id，若不传则清除所有玩家的可执行动作
+ * 清空玩家的playerData.actionCode、chiList和gangList
+ * @param {String|Array.<String>|undefined} playerId - 需要情况的玩家id，若不传则清除所有玩家的可执行动作
  */
 p._clearActionData = function (playerId) {
-    let self = this, playerIds = playerId ? [playerId] : self.playerSequence;
+    let self = this, playerIds = playerId ? [].concat(playerId) : self.playerSequence;
     playerIds.forEach(playerId => {
         let pd = self.playerDatas[playerId];
         pd.actionCode = 0;
@@ -200,12 +204,15 @@ p._resetPlayerData = function () {
         pd.playCard = undefined;
         pd.newCard = undefined;
         pd.groupCards = [];
+        pd.chiList = undefined;
+        pd.gangList = undefined;
     });
     this.currentPlayerId = this.playerSequence[0];
 };
 
 /**
  * 发牌
+ * TODO: 是否应该按playerSequence顺序来抽牌呢？
  */
 p._dealCards = function () {
     for (let i=0; i<this.config.handCardCount; i++) {
@@ -316,7 +323,7 @@ p._canGangCard = function (playerId, card) {
         let groupCard = playerData.groupCards.find(gc => gc.type===ActionCode.Peng && gc.card===card);
         if (groupCard && handCards.includes(card)) return ActionCode.PengHouGang;
     } else { // 非当前玩家，需要判断当前玩家是否打出card这张牌，若不是，直接判错
-        if (this.playerDatas[playerId].playCard !== card) return false;
+        if (this.playerDatas[this.currentPlayerId].playCard !== card) return false;
     }
     // 查找是否能找到needCount张card
     // to check: 约定玩家手牌已排序
@@ -383,7 +390,7 @@ p._retrieveOthersActionList = function () {
         this._canHu(playerId, currentPlayCard) && (actionCode += ActionCode.Hu);
         if (this._canGangCard(playerId, currentPlayCard)) {
             actionCode += ActionCode.Gang;
-            r.gangList = [{actionCode:ActionCode.PengHouGang, card:currentPlayCard}];
+            r.gangList = [{actionCode:ActionCode.MingGang, card:currentPlayCard}];
         }
         this._canPengCard(playerId, currentPlayCard) && (actionCode += ActionCode.Peng);
         let chiList = this._getNextPlayerId()===playerId ? this._retrieveChiList(playerId, currentPlayCard) : [];
@@ -436,8 +443,9 @@ p._checkNextOthersAction = function () {
     } else {
         let playerData = this.playerDatas[playerAction.playerId];
         // TODO: 通知玩家更新界面状态（动作按钮状态更新）
-        // TODO: 这里将chiList直接放在playerData感觉不够优雅
+        // TODO: 这里将gangList、chiList直接放在playerData感觉不够优雅
         playerData.actionCode = playerAction.actionCode;
+        playerData.gangList = playerAction.gangList;
         playerData.chiList = playerAction.chiList;
         this._sendToPlayer(JSON.stringify(this._getGameState()));
         console.log(`通知玩家: `, playerAction);
@@ -539,6 +547,7 @@ p.start = function () {
     let self = this;
     return new Promise((resolve, reject) => {
         // TODO: 重置单局数据
+        self.othersActionList = [];
         self._resetCards();
         self._resetPlayerData();
         // 发牌
