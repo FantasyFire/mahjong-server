@@ -37,18 +37,18 @@
 
 .action-group {
     position: relative;
-    width: 100%;
     min-height: 50px;
+    float: left;
 }
 
-.action-group::before, .action-group::after {
+/* .action-group::before, .action-group::after {
     content: "";
     display: table;
 }
 
 .action-group::after {
     clear: both;
-}
+} */
 
 .action {
     position: relative;
@@ -82,6 +82,11 @@
 .wrapper {
     position: relative;
     min-width: 100%;
+    float: left;
+}
+
+.action-detail-group-wrapper {
+    position: relative;
     float: left;
 }
 

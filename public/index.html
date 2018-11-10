@@ -197,11 +197,11 @@
         $('#'+playerId+'_actionDetail').html(content);
     }
     function renderChiList(playerId, chiList) {
-        return chiList.map((c, i) => `<div><div class="clickLayer" onclick="doAction('${playerId}',${ActionCode.Chi},${i})"></div>${renderCardGroup(`chi_${i}`, c)}</div>`);
+        return chiList.map((c, i) => `<div class="action-detail-group-wrapper"><div class="clickLayer" onclick="doAction('${playerId}',${ActionCode.Chi},${i})"></div>${renderCardGroup(`chi_${i}`, c)}</div>`);
     }
 
     function renderGangList(playerId, gangList) {
-        return gangList.map((c, i) => `<div><div class="clickLayer" onclick="doAction('${playerId}',${ActionCode.Gang},${i})"></div>${renderCardGroup(`gang_${i}`, c)}</div>`);
+        return gangList.map((c, i) => `<div class="action-detail-group-wrapper"><div class="clickLayer" onclick="doAction('${playerId}',${ActionCode.Gang},${i})"></div>${renderCardGroup(`gang_${i}`, c)}</div>`);
     }
 </script>
 </html>
