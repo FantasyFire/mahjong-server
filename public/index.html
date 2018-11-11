@@ -71,8 +71,8 @@
         str += '<div class="wrapper">';
             // actionDetail
             str += renderCardGroup(playerData.id + '_actionDetail', []);
-            // playCard
-            str += renderCardGroup('playCard', playerData.playCard||[]);
+            // playingCard
+            str += renderCardGroup('playingCard', playerData.playingCard||[]);
             // action
             str += renderActionCode(playerData.id, playerData.actionCode);
         str += '</div>';
