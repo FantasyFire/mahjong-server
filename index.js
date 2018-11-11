@@ -1,6 +1,6 @@
 const co = require('co');
 const express = require('express');
-const cookieParser=require("cookie-parser");
+// const cookieParser=require("cookie-parser");
 const app = express();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
@@ -17,12 +17,11 @@ app.use(express.static(__dirname + '/public'));
 io.on('connection', function (socket) {
     console.log('a user connected');
     co(function* () {
-        yield room.joinIn('player1');
-        yield room.joinIn('player2');
-        yield room.joinIn('player3');
-        yield room.joinIn('player4');
+        yield room.joinIn({id:'player1', socket});
+        yield room.joinIn({id:'player2', socket});
+        yield room.joinIn({id:'player3', socket});
+        yield room.joinIn({id:'player4', socket});
         room._initGame();
-        room.game.socket = socket; // 测试时，这样弄
         
         yield room.startGame();
     });

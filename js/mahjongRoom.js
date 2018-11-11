@@ -5,25 +5,26 @@ const util = require('util');
  * @param {String} - 房间id
  * @param {Function} - 麻将游戏构造函数
  */
-var MahjongRoom = function (roomId, gameConstructor, socket) {
-    Room.call(this, roomId, gameConstructor, socket);
+var MahjongRoom = function (roomId, gameConstructor) {
+    Room.call(this, roomId, gameConstructor);
 };
 
 MahjongRoom.prototype = {
     // 私有方法
-    _joinIn (playerId) {
-        this.playerSequence.push(playerId);
-        this.playerDatas[playerId] = {};
+    _joinIn (user) {
+        this.playerSequence.push(user.id);
+        this.playerDatas[user.id] = user;
     },
     _exit (playerId) {
         this.playerSequence.splice(this.playerSequence.indexOf(playerId), 1);
         delete this.playerDatas[playerId];
     },
     _initGame () {
+        let self = this;
         // TODO: 构造游戏数据对象，如第几局，有什么算分规则之类的
         let data = {
             playerSequence: this.playerSequence,
-            socket: this.socket
+            users: this.playerSequence.map(pid => self.playerDatas[pid])
         };
         // TODO: 构造游戏配置对象，如第几局，有什么算分规则之类的
         let gameConfig = {
@@ -31,20 +32,21 @@ MahjongRoom.prototype = {
         this.game = new this.gameConstructor(data, gameConfig);
     },
     _startGame () {
+        this.state = this.STATE.INGAME;
         this.game.start();
     },
     // 实现Room的接口
-    joinIn (playerId) {
+    joinIn (user) {
         let self = this;
         return new Promise((resolve, reject) => {
-            let exist = self.playerSequence.includes(playerId);
+            let exist = self.playerSequence.includes(user.id);
             if (self.inState(self.STATE.INGAME)) {
                 reject({'error': true, 'result': `房间${self.roomId}已开始游戏，不能中途加入房间`});
             } else if (!exist) {
-                self._joinIn(playerId);
-                resolve({'error': false, 'result': `player: ${playerId} 成功进入房间`});
+                self._joinIn(user);
+                resolve({'error': false, 'result': `player: ${user.id} 成功进入房间`});
             } else {
-                reject({'error': true, 'result': `用户${playerId}已经进入房间${self.roomId}`});
+                reject({'error': true, 'result': `用户${user.id}已经进入房间${self.roomId}`});
             }
         });
     },
