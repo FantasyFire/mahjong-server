@@ -1,5 +1,6 @@
 const co = require('co');
-const express = require('express')
+const express = require('express');
+const cookieParser=require("cookie-parser");
 const app = express();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
@@ -44,13 +45,3 @@ io.on('connection', function (socket) {
 http.listen(3000, function () {
     console.log('http listening on port: 3000');
 });
-
-
-// co(function* () {
-//     yield room.joinIn('player1');
-//     yield room.joinIn('player2');
-//     yield room.joinIn('player3');
-//     yield room.joinIn('player4');
-
-//     yield room.startGame();
-// });

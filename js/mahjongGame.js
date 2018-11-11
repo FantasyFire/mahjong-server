@@ -16,7 +16,7 @@ var MahjongGame = function (data, config) {
         needPlayerCount: 4,
         cards: [11,11,11,11,12,12,12,12,13,13,13,13,14,14,14,14,15,15,15,15,16,16,16,16,17,17,17,17,18,18,18,18,19,19,19,19,31,31,31,31,32,32,32,32,33,33,33,33,34,34,34,34,35,35,35,35,36,36,36,36,37,37,37,37,38,38,38,38,39,39,39,39,51,51,51,51,52,52,52,52,53,53,53,53,54,54,54,54,55,55,55,55,56,56,56,56,57,57,57,57,58,58,58,58,59,59,59,59,70,70,70,70,73,73,73,73,76,76,76,76,79,79,79,79,90,90,90,90,93,93,93,93,96,96,96,96],
         handCardCount: 13,
-        cheat: 3
+        cheat: 0
     };
     this.config = Object.assign(defaultConfig, config || {});
     // 重置游戏变量
@@ -84,6 +84,10 @@ var MahjongGame = function (data, config) {
                     self._checkNextOthersAction();
                 }, 1000);
             },
+            onBeforeHu (transition, playerId) {
+                console.log('onHu');
+                self._clearActionData();
+            },
             onBeforeNext () {
                 console.log('onBeforeNext');
                 let oldPlayerData = self.playerDatas[self.currentPlayerId];
@@ -108,6 +112,11 @@ var MahjongGame = function (data, config) {
                 setTimeout(function () {
                     self._checkNextOthersAction();
                 }, 1000);
+            },
+            onGameOver () {
+                console.log('onGameOver');
+                self._sendToPlayer(JSON.stringify(self._getGameState()));
+                // self._sendToPlayer(JSON.stringify({msg:"游戏结束"}));
             }
         }
     });
@@ -367,8 +376,8 @@ p._updateCurrentPlayerAction = function () {
     let playerId = this.currentPlayerId,
         playerData = this.playerDatas[playerId]
         actionCode = 0;
-    this._canHu(playerId) && (actionCode += ActionCode.Hu);
-    let gangList = this._retrieveGangCard(playerId);
+    this._canHu(playerId, playerData.newCard) && (actionCode += ActionCode.Hu);
+    let gangList = this._retrieveGangList(playerId);
     gangList.length > 0 && (actionCode += ActionCode.Gang, playerData.gangList = gangList);
     playerData.actionCode = actionCode;
     return playerData;
@@ -426,7 +435,7 @@ p._retrieveChiList = function (playerId, card) {
  * 获取玩家能暗杠/碰后杠的牌
  * @return {Array.<Object>} - 形如 [{actionCode:32,card:5}]
  */
-p._retrieveGangCard = function (playerId) {
+p._retrieveGangList = function (playerId) {
     let playerData = this.playerDatas[playerId],
         cardCount = GU.countWord(this._getAllHandCards(playerData)), // 统计出手中各牌的数量
         result = GU.objFilter(cardCount, count => count==4).map(kvp => ({actionCode:ActionCode.AnGang, card:kvp.key*1})); // 手上有4张的牌
@@ -585,7 +594,7 @@ p.doAction = function (playerId, action, data) {
             message = '在等待其他玩家动作时，非当前询问玩家请求动作';
     }
     if (this.fsm.cannot(action)) {
-        message = '当前状态下，玩家不可以执行该动作';
+        message = '当前游戏状态下，玩家不可以执行该动作';
     }
     if (message) {
         return {'error': true, 'result': message};
@@ -679,6 +688,20 @@ p.pass = function (playerId) {
     let playerData = this.playerDatas[playerId];
     if (playerData.actionCode&ActionCode.Pass) {
         return {'error': false, 'result': `玩家${playerId}跳过，他当前可执行动作为${playerData.actionCode}`};
+    } else {
+        return {'error': true, 'result': `玩家${playerId}不可执行过动作`};
+    }
+};
+
+/**
+ * 胡
+ * @param {String} playerId - 玩家id
+ */
+p.hu = function (playerId) {
+    // 除了合法性检测不需要干别的事
+    let playerData = this.playerDatas[playerId];
+    if (playerData.actionCode&ActionCode.Hu) {
+        return {'error': false, 'result': `玩家${playerId}胡牌，他当前可执行动作为${playerData.actionCode}`};
     } else {
         return {'error': true, 'result': `玩家${playerId}不可执行过动作`};
     }

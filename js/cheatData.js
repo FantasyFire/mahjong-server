@@ -30,6 +30,10 @@ cheat[5] = {
     p1:[11],
     p2:[11,11,11]
 };
+// 6：判胡
+cheat[6] = {
+    p1: [11,12,13,13,13,13,15,15,15,53,53,53,70,70]
+}
 
 // 返回第index组作弊卡序
 exports.getCheatCards = function (gameConfig, index) {
