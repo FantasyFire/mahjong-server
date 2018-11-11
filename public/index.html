@@ -43,12 +43,21 @@
         Pass: 1 // 过
     };
 
-    var socket = null, currentPlayerId = "", state = "", gameData = null;
+    var sockets = {'player1':null,'player2':null,'player3':null,'player4':null}, 
+        currentPlayerId = "", state = "", gameData = null;
     $(function () {
-        socket = io();
-        socket.on('news', onNews);
+        let i = 0;
+        for (let playerId in sockets) {
+            let pid = playerId;
+            setTimeout(function () {
+                let s = sockets[pid] = io();
+                s.on('news', onNews);
+                s.on('connect', () => login(pid));
+            }, 500*i);
+            i++;
+        }
     });
-1
+
     function onNews(msg) {
         console.log(`收到消息：${msg}`);
         let json = gameData = JSON.parse(msg);
@@ -60,6 +69,12 @@
             playerData.id = player;
             renderPlayerData(wrapper, playerData, player==currentPlayerId);
         }
+    }
+
+    function login(playerId) {
+        let msg = JSON.stringify({playerId});
+        console.log('玩家登陆: ', msg)
+        sockets[playerId].emit('login', msg);
     }
 
     function renderPlayerData(wrapper, playerData, canPlayCard) {
@@ -178,14 +193,14 @@
     function playCard(index) {
         let msg = JSON.stringify({playerId: currentPlayerId, action:"playCard", data:index});
         console.log('发送消息: ', msg)
-        socket.emit('chat message', msg);
+        sockets[currentPlayerId].emit('chat message', msg);
     }
 
     // 发起动作请求（不包括打牌）
     function doAction(playerId, actionCode, data) {
         let msg = JSON.stringify({playerId, action:actionCode2actionApi[actionCode], data});
         console.log('发送消息: ', msg)
-        socket.emit('chat message', msg);
+        sockets[playerId].emit('chat message', msg);
     }
 
     // 展示吃/杠选择

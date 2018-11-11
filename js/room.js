@@ -36,6 +36,10 @@ Room.prototype = {
         console.error('接口startGame未实现 in Game.startGame');
         return false;
     },
+    reconnect (playerId, socket) {
+        console.error('接口reconnect未实现 in Game.reconnect');
+        return false;
+    },
     // 通用接口
     // 判断当前是否处于某状态
     inState (state) {

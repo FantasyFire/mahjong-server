@@ -20,6 +20,10 @@ p.gameOver = function () {
     console.error('接口gameOver未实现 in Game.gameOver');
     return false;
 };
+p.reconnect = function (playerId, socket) {
+    console.error('接口reconnect未实现 in Game.gameOver');
+    return false;
+};
 
 // 通用接口
 // 判断当前是否处于某状态

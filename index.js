@@ -7,24 +7,29 @@ const io = require('socket.io')(http);
 const MahjongRoom = require('./js/mahjongRoom');
 const MahjongGame = require('./js/mahjongGame');
 
-var room = new MahjongRoom('1000', MahjongGame);
-
+// http
 app.get('/', function (req, res) {
     res.sendFile(__dirname + '/public/index.html');
 });
 app.use(express.static(__dirname + '/public'));
+http.listen(3000, function () {
+    console.log('http listening on port: 3000');
+});
+
+// websocket
+var room = new MahjongRoom('1000', MahjongGame);
 
 io.on('connection', function (socket) {
     console.log('a user connected');
-    co(function* () {
-        yield room.joinIn({id:'player1', socket});
-        yield room.joinIn({id:'player2', socket});
-        yield room.joinIn({id:'player3', socket});
-        yield room.joinIn({id:'player4', socket});
-        room._initGame();
+    // co(function* () {
+    //     yield room.joinIn({id:'player1', socket});
+    //     yield room.joinIn({id:'player2', socket});
+    //     yield room.joinIn({id:'player3', socket});
+    //     yield room.joinIn({id:'player4', socket});
+    //     room._initGame();
         
-        yield room.startGame();
-    });
+    //     yield room.startGame();
+    // });
     socket.on('chat message', function(msg){
         console.log('message: ' + msg);
         try {
@@ -39,8 +44,23 @@ io.on('connection', function (socket) {
     socket.on('disconnect', function(){
         console.log('user disconnected');
     });
-});
-
-http.listen(3000, function () {
-    console.log('http listening on port: 3000');
+    socket.on('login', function (msg) {
+        console.log('login: ' + msg);
+        try {
+            let data = JSON.parse(msg), playerId = data.playerId;
+            if (!room.inState(room.STATE.INGAME)) {
+                room.joinIn({id:playerId, socket})
+                .then(res => {
+                    console.log('room.joinIn res:' + JSON.stringify(res));
+                    // TODO: 方便测试
+                    if (room.playerSequence.length == 4 && !room.inState(room.STATE.INGAME)) room.startGame();
+                })
+                .catch(console.error);
+            } else {
+                room.reconnect(playerId, socket);
+            }
+        } catch (err) {
+            console.error('sth. wrong, msg: ', err);
+        }
+    })
 });

@@ -348,6 +348,11 @@ p.start = function () {
         resolve({'error': false, result: '游戏开始'});
     });
 };
+// 断线重连
+p.reconnect = function (playerId, socket) {
+    this.players[playerId].socket = socket;
+    this._sendToPlayer(JSON.stringify(this._getGameState(playerId)), playerId);
+};
 
 // 玩家动作接口
 // 玩家动作总接口

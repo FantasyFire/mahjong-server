@@ -33,6 +33,7 @@ MahjongRoom.prototype = {
     },
     _startGame () {
         this.state = this.STATE.INGAME;
+        this._initGame();
         this.game.start();
     },
     // 实现Room的接口
@@ -76,6 +77,9 @@ MahjongRoom.prototype = {
                 reject({'error': true, 'result': `游戏已经开始`});
             }
         });
+    },
+    reconnect (playerId, socket) {
+        this.game.reconnect(playerId, socket);
     }
 };
 
