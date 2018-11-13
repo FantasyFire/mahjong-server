@@ -12,7 +12,8 @@ const ActionCode = {
     Gang: 56, // 杠
     Peng: 4, // 碰
     Chi: 2, // 吃
-    Pass: 1 // 过
+    Pass: 1, // 过
+    None: 0 // 无动作
 };
 
 // 等待玩家时限
@@ -28,8 +29,14 @@ const STATE = {
     GAME_OVER: 'gameOver'
 };
 
+// 麻将牌
+const CARD = {
+    BACK: 100 // 背面
+};
+
 module.exports = {
     ActionCode,
     WaitTimeLimit,
-    STATE
+    STATE,
+    CARD
 };

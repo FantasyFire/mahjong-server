@@ -203,7 +203,6 @@ p._clearActionData = function (playerId) {
 /**
  * 重置单局玩家数据
  */
-// TODO: 改方法考虑去除或将currentPlayerId初始化外移
 p._resetPlayerData = function () {
     let self = this;
     this.playerSequence.forEach(playerId => self.players[playerId]._resetData());
@@ -235,7 +234,6 @@ p._updateCurrentPlayerAction = function () {
  * 在当前玩家打出牌后，计算出其他玩家的可执行动作列表，以优先度排序
  */
 // TODO: 以下方法名的retrieve我都觉得不合适，以后考虑改名
-// to check: 写完未测试
 // TODO: 这里没有考虑一炮多响的情况
 p._retrieveOthersActionList = function () {
     let currentPlayer = this.players[this.currentPlayerId],

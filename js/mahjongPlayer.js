@@ -1,5 +1,5 @@
 const GU = require('./gameUtils.js');
-const {ActionCode} = require('./mahjongConstants.js');
+const {ActionCode, CARD} = require('./mahjongConstants.js');
 const checkHu = require('./checkHu.js');
 
 var MahjongPlayer = function (user) {
@@ -20,18 +20,21 @@ p._resetData = function () {
     this.gangList = undefined;
 };
 
-// 获取玩家数据
-p.getData = function () {
+/**
+ * 获取玩家数据
+ * @param {Boolean} needMask - 是否需要屏蔽（对别人不可见的牌）
+ */
+p.getData = function (needMask) {
     return {
         id: this.id,
-        actionCode: this.actionCode,
-        handCards: this.handCards,
+        actionCode: needMask ? ActionCode.None : this.actionCode,
+        handCards: needMask ? this.handCards.concat().fill(CARD.BACK) : this.handCards,
         playedCards: this.playedCards,
         playingCard: this.playingCard,
-        newCard: this.newCard,
+        newCard: this.newCard ? (needMask ? CARD.BACK : this.newCard) : this.newCard,
         groupCards: this.groupCards,
-        chiList: this.chiList,
-        gangList: (this.gangList||[]).map(g => g.card) // 客户端不需要知道这个是哪种杠（真的不需要吗？）
+        chiList: needMask ? undefined : this.chiList,
+        gangList: needMask ? undefined : (this.gangList||[]).map(g => g.card) // 客户端不需要知道这个是哪种杠（真的不需要吗？）
     };
 };
 // 清除玩家动作数据（包括actionCode、chiList、gangList）

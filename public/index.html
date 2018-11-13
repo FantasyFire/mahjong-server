@@ -112,7 +112,7 @@
 
     function renderCard(number, index) {
         return `
-            <div class="card" ${index==undefined ? "" : `onclick="playCard(${index})"`} style="background-color:#${['f99','9f9','99f','fff','fff'][number2index(number)]}">
+            <div class="card" ${index==undefined ? "" : `onclick="playCard(${index})"`} style="background-color:#${['f99','9f9','99f','fff','fff','fff'][number2index(number)]}">
                 <div class="text">${number2text(number)}</div>
             </div>
         `;
@@ -127,24 +127,26 @@
         `;
     }
 
-    const type2text = {1:"万", 3:"条", 5:"筒", 7:"风", 9:""};
+    const type2text = {1:"万", 3:"条", 5:"筒", 7:"风", 9:"", 10:""};
     const feng2text = {0:"东", 3:"南", 6:"西", 9:"北"};
     const jian2text = {0:"中", 3:"发", 6:"白"};
     function number2text(number) {
         let type = ~~(number/10), n = number%10, text = "";
-        if (type <= 5) {
+        if (type <= 5) { // 万条筒
             text = n;
-        } else if (type == 7) {
+        } else if (type == 7) { // 风牌
             text = feng2text[n];
-        } else if (type == 9) {
+        } else if (type == 9) { // 箭牌
             text = jian2text[n];
+        } else if (number == 100) { // 卡背
+            text = '';
         }
         return text + type2text[type];
     }
 
-    // 数字映射到牌类的序号（万：0，条：1，筒：2，风：3，箭：4）
+    // 数字映射到牌类的序号（万：0，条：1，筒：2，风：3，箭：4，卡背：5）
     function number2index(number) {
-        return number < 30 ? 0 : number < 50 ? 1 : number < 70 ? 2 : number < 90 ? 3 : 4;
+        return number < 30 ? 0 : number < 50 ? 1 : number < 70 ? 2 : number < 90 ? 3 : number < 100 ? 4 : 5;
     }
 
     // actionCode 映射 后端接受的api名
