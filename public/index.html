@@ -30,7 +30,7 @@
 </body>
 <script>
     // 可执行动作码
-    const ActionCode = {
+    const ACTION_CODE = {
         ZiMo: 128, // 自摸
         DianPao: 64, // 点炮
         Hu: 192, // 胡
@@ -45,6 +45,7 @@
 
     var sockets = {'player1':null,'player2':null,'player3':null,'player4':null}, 
         currentPlayerId = "", state = "", gameData = null;
+    var lastGameData = null; // 缓存上一次接收的gameData
     $(function () {
         let i = 0;
         for (let playerId in sockets) {
@@ -61,13 +62,18 @@
     function onNews(msg) {
         console.log(`收到消息：${msg}`);
         let json = gameData = JSON.parse(msg);
+        lastGameData = lastGameData || json;
+        lastGameData.tableData = json.tableData; // tableData暂时还是全量更新
         currentPlayerId = json.tableData.currentPlayerId;
         state = json.tableData.state;
-        for (let player in json.playerDatas) {
-            let wrapper = document.querySelector('#'+player);
-            let playerData = json.playerDatas[player];
-            playerData.id = player;
-            renderPlayerData(wrapper, playerData, player==currentPlayerId);
+        // playerData增量更新
+        for (let playerId in json.playerDatas) {
+            let wrapper = document.querySelector('#'+playerId);
+            // 将新的playerData合并到缓存的数据当中
+            let playerData = {...lastGameData.playerDatas[playerId], ...json.playerDatas[playerId]};
+            playerData.id = playerId;
+            lastGameData.playerDatas[playerId] = playerData; // 将合并后的playerData更新到lastGameData中
+            renderPlayerData(wrapper, playerData, playerId==currentPlayerId);
         }
     }
 
@@ -93,11 +99,11 @@
         str += '</div>';
         str += '<div class="wrapper">';
             // TODO: 这里只处理了card，未处理from信息。数据结构：{card:[n,n,n],from:"xxxx"}
-            playerData.groupCards.forEach(gc => {
+            (playerData.groupCards||[]).forEach(gc => {
                 let cards = gc.card;
                 // TODO: 这里应详细区分各种杠
-                if (gc.actionCode&ActionCode.Gang) cards = Array(4).fill(gc.card);
-                if (gc.actionCode&ActionCode.Peng) cards = Array(3).fill(gc.card);
+                if (gc.actionCode&ACTION_CODE.Gang) cards = Array(4).fill(gc.card);
+                if (gc.actionCode&ACTION_CODE.Peng) cards = Array(3).fill(gc.card);
                 str += renderCardGroup('groupCards', cards);
             });
             // hand cards
@@ -168,7 +174,7 @@
         let actionText = '', onclick = '';
         // TODO: 点击事件
         // 吃、杠，弹出选择列表
-        if (actionCode&ActionCode.Chi || actionCode&ActionCode.Gang) {
+        if (actionCode&ACTION_CODE.Chi || actionCode&ACTION_CODE.Gang) {
             onclick = `showActionDetail('${playerId}',${actionCode});$('#${playerId}_actionCodeGroup').html('')`;
         } else {
             onclick = `doAction('${playerId}',${actionCode},'')`;
@@ -209,16 +215,16 @@
     function showActionDetail(playerId, actionCode) {
         let playerData = gameData.playerDatas[playerId];
         let content = '';
-        if (actionCode&ActionCode.Chi) content = renderChiList(playerId, playerData.chiList);
-        if (actionCode&ActionCode.Gang) content = renderGangList(playerId, playerData.gangList);
+        if (actionCode&ACTION_CODE.Chi) content = renderChiList(playerId, playerData.chiList);
+        if (actionCode&ACTION_CODE.Gang) content = renderGangList(playerId, playerData.gangList);
         $('#'+playerId+'_actionDetail').html(content);
     }
     function renderChiList(playerId, chiList) {
-        return chiList.map((c, i) => `<div class="action-detail-group-wrapper"><div class="clickLayer" onclick="doAction('${playerId}',${ActionCode.Chi},${i})"></div>${renderCardGroup(`chi_${i}`, c)}</div>`);
+        return chiList.map((c, i) => `<div class="action-detail-group-wrapper"><div class="clickLayer" onclick="doAction('${playerId}',${ACTION_CODE.Chi},${i})"></div>${renderCardGroup(`chi_${i}`, c)}</div>`);
     }
 
     function renderGangList(playerId, gangList) {
-        return gangList.map((c, i) => `<div class="action-detail-group-wrapper"><div class="clickLayer" onclick="doAction('${playerId}',${ActionCode.Gang},${i})"></div>${renderCardGroup(`gang_${i}`, c)}</div>`);
+        return gangList.map((c, i) => `<div class="action-detail-group-wrapper"><div class="clickLayer" onclick="doAction('${playerId}',${ACTION_CODE.Gang},${i})"></div>${renderCardGroup(`gang_${i}`, c)}</div>`);
     }
 </script>
 </html>

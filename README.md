@@ -161,3 +161,6 @@ fsm 对于A->A 不会触发 onA 的事件
 mahjongGame里的turnCount递增未实现
 
 接下来主要考虑服务端到前端的数据通信如何优化
+1、将传递信息从全量状态改为增量状态
+增量状态（player.dirty）什么时候清除？
+actionCode清除有问题

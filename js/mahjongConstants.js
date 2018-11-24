@@ -2,7 +2,7 @@
  * 本文件存储麻将中的常量信息
  */
 // 可执行动作码
-const ActionCode = {
+const ACTION_CODE = {
     ZiMo: 128, // 自摸
     DianPao: 64, // 点炮
     Hu: 192, // 胡
@@ -34,9 +34,23 @@ const CARD = {
     NONE: 100 // 背面
 };
 
+// 玩家数据
+const PLAYER_STATE = {
+    ID: 1,
+    ACTION_CODE: 2,
+    HAND_CARDS: 3,
+    PLAYED_CARDS: 4,
+    PLAYING_CARD: 5,
+    NEW_CARD: 6,
+    GROUP_CARDS: 7,
+    CHI_LIST: 8,
+    GANG_LIST: 9
+}
+
 module.exports = {
-    ActionCode,
+    ACTION_CODE,
     WaitTimeLimit,
     STATE,
-    CARD
+    CARD,
+    PLAYER_STATE
 };

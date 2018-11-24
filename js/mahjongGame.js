@@ -1,5 +1,5 @@
 const GU = require('./gameUtils.js');
-const {ActionCode, STATE} = require('./mahjongConstants.js');
+const {ACTION_CODE, STATE} = require('./mahjongConstants.js');
 const MahjongPlayer = require('./mahjongPlayer.js');
 const Game = require('./game.js');
 const util = require('util');
@@ -96,8 +96,7 @@ var MahjongGame = function (data, config) {
             onBeforeNext () {
                 console.log('onBeforeNext');
                 let lastPlayer = self.players[self.currentPlayerId];
-                lastPlayer.playedCards.push(lastPlayer.playingCard);
-                lastPlayer.playingCard = undefined;
+                lastPlayer.playCardEnd();
                 self.currentPlayerId = self._getNextPlayerId();
                 let player = self.players[self.currentPlayerId];
                 player.drawCard(self._getTopCard());
@@ -224,10 +223,10 @@ p._updateCurrentPlayerAction = function () {
     let playerId = this.currentPlayerId,
         player = this.players[playerId]
         actionCode = 0;
-    player.canHu(player.newCard) && (actionCode += ActionCode.Hu);
+    player.canHu(player.newCard) && (actionCode += ACTION_CODE.Hu);
     let gangList = player.retrieveGangList();
-    gangList.length > 0 && (actionCode += ActionCode.Gang, player.gangList = gangList);
-    player.actionCode = actionCode;
+    gangList.length > 0 && (actionCode += ACTION_CODE.Gang, player.setGangList(gangList));
+    player.setActionCode(actionCode);
     return player;
 };
 /**
@@ -244,16 +243,16 @@ p._retrieveOthersActionList = function () {
         let actionCode = 0,
             player = this.players[playerId],
             r = {playerId};
-        player.canHu(currentPlayCard) && (actionCode += ActionCode.Hu);
+        player.canHu(currentPlayCard) && (actionCode += ACTION_CODE.Hu);
         if (player.canGangCard(currentPlayCard, currentPlayer)) {
-            actionCode += ActionCode.Gang;
-            r.gangList = [{actionCode:ActionCode.MingGang, card:currentPlayCard}];
+            actionCode += ACTION_CODE.Gang;
+            r.gangList = [{actionCode:ACTION_CODE.MingGang, card:currentPlayCard}];
         }
-        player.canPengCard(currentPlayCard, currentPlayer) && (actionCode += ActionCode.Peng);
+        player.canPengCard(currentPlayCard, currentPlayer) && (actionCode += ACTION_CODE.Peng);
         let chiList = this._getNextPlayerId()===playerId ? player.retrieveChiList(currentPlayCard) : [];
-        chiList.length > 0 && (actionCode += ActionCode.Chi, r.chiList = chiList);
+        chiList.length > 0 && (actionCode += ACTION_CODE.Chi, r.chiList = chiList);
         if (actionCode > 0) {
-            actionCode += ActionCode.Pass; // 过 的actionCode
+            actionCode += ACTION_CODE.Pass; // 过 的actionCode
             r.actionCode = actionCode;
             res.push(r);
         }
@@ -273,9 +272,9 @@ p._checkNextOthersAction = function () {
         let player = this.players[playerAction.playerId];
         // TODO: 通知玩家更新界面状态（动作按钮状态更新）
         // TODO: 这里将gangList、chiList直接放在playerData感觉不够优雅
-        player.actionCode = playerAction.actionCode;
-        player.gangList = playerAction.gangList;
-        player.chiList = playerAction.chiList;
+        player.setActionCode(playerAction.actionCode);
+        player.setGangList(playerAction.gangList);
+        player.setChiList(playerAction.chiList);
         this._sendToPlayer(JSON.stringify(this._getGameState()));
         console.log(`通知玩家: `, playerAction);
     }
@@ -308,7 +307,7 @@ p._getGameState = function (playerId) {
     };
     // TODO: 玩家数据，本人数据公开，其他玩家数据屏蔽（屏蔽考虑加一个私有方法实现）
     let playerDatas = {};
-    this.playerSequence.forEach(pid => playerDatas[pid] = self.players[pid].getData());
+    this.playerSequence.forEach(pid => playerDatas[pid] = self.players[pid].getData(false, true));
     return {tableData, playerDatas};
 };
 
@@ -412,7 +411,7 @@ p.gang = function (playerId, index) {
         currentPlayer = this.players[this.currentPlayerId];
     if (gangData) {
         let actionCode = gangData.actionCode, card = gangData.card;
-        if (actionCode === ActionCode.PengHouGang) {
+        if (actionCode === ACTION_CODE.PengHouGang) {
             // TODO: 碰后杠需要轮询确认是否有人抢杠
         }
         player.gangCard(card, actionCode, currentPlayer);
@@ -430,7 +429,7 @@ p.peng = function (playerId) {
     let currentPlayer = this.players[this.currentPlayerId],
         card = currentPlayer.playingCard,
         player = this.players[playerId];
-    if (player.actionCode&ActionCode.Peng) {
+    if (player.actionCode&ACTION_CODE.Peng) {
         player.pengCard(card, currentPlayer);
         return {'error': false, 'result': `玩家${playerId}碰${card}玩家${this.currentPlayerId}打出的牌${card}`};
     } else {
@@ -464,7 +463,7 @@ p.chi = function (playerId, index) {
 p.pass = function (playerId) {
     // 除了合法性检测不需要干别的事
     let player = this.players[playerId];
-    if (player.actionCode&ActionCode.Pass) {
+    if (player.actionCode&ACTION_CODE.Pass) {
         return {'error': false, 'result': `玩家${playerId}跳过，他当前可执行动作为${player.actionCode}`};
     } else {
         return {'error': true, 'result': `玩家${playerId}不可执行过动作`};
@@ -478,7 +477,7 @@ p.pass = function (playerId) {
 p.hu = function (playerId) {
     // 除了合法性检测不需要干别的事
     let player = this.players[playerId];
-    if (player.actionCode&ActionCode.Hu) {
+    if (player.actionCode&ACTION_CODE.Hu) {
         return {'error': false, 'result': `玩家${playerId}胡牌，他当前可执行动作为${player.actionCode}`};
     } else {
         return {'error': true, 'result': `玩家${playerId}不可执行过动作`};

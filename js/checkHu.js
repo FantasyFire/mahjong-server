@@ -1,4 +1,4 @@
-const {ActionCode, STATE} = require('./mahjongConstants.js');
+const {ACTION_CODE, STATE} = require('./mahjongConstants.js');
 
 /**
  * 这里只做最简单的判胡
