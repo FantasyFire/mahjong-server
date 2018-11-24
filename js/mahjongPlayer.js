@@ -28,10 +28,10 @@ p.getData = function (needMask) {
     return {
         id: this.id,
         actionCode: needMask ? ActionCode.None : this.actionCode,
-        handCards: needMask ? this.handCards.concat().fill(CARD.BACK) : this.handCards,
+        handCards: needMask ? this.handCards.concat().fill(CARD.NONE) : this.handCards,
         playedCards: this.playedCards,
         playingCard: this.playingCard,
-        newCard: this.newCard ? (needMask ? CARD.BACK : this.newCard) : this.newCard,
+        newCard: this.newCard ? (needMask ? CARD.NONE : this.newCard) : this.newCard,
         groupCards: this.groupCards,
         chiList: needMask ? undefined : this.chiList,
         gangList: needMask ? undefined : (this.gangList||[]).map(g => g.card) // 客户端不需要知道这个是哪种杠（真的不需要吗？）

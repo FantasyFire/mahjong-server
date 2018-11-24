@@ -31,7 +31,7 @@ const STATE = {
 
 // 麻将牌
 const CARD = {
-    BACK: 100 // 背面
+    NONE: 100 // 背面
 };
 
 module.exports = {
