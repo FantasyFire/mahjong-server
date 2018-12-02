@@ -4,7 +4,8 @@ const MahjongPlayer = require('./mahjongPlayer.js');
 const Game = require('./game.js');
 const util = require('util');
 const StateMachine = require('javascript-state-machine');
-const Log = require('./logger.js')();
+// TODO: 方便测试，这里写死log路径
+const Log = require('./logger.js')({logPath:"e:/project/mahjong-server/logs/"});
 const Cheat = require('./cheatData.js');
 
 var MahjongGame = function (data, config) {
@@ -20,7 +21,7 @@ var MahjongGame = function (data, config) {
         needPlayerCount: 4,
         cards: [11,11,11,11,12,12,12,12,13,13,13,13,14,14,14,14,15,15,15,15,16,16,16,16,17,17,17,17,18,18,18,18,19,19,19,19,31,31,31,31,32,32,32,32,33,33,33,33,34,34,34,34,35,35,35,35,36,36,36,36,37,37,37,37,38,38,38,38,39,39,39,39,51,51,51,51,52,52,52,52,53,53,53,53,54,54,54,54,55,55,55,55,56,56,56,56,57,57,57,57,58,58,58,58,59,59,59,59,70,70,70,70,73,73,73,73,76,76,76,76,79,79,79,79,90,90,90,90,93,93,93,93,96,96,96,96],
         handCardCount: 13,
-        cheat: 2
+        cheat: 6
     };
     this.config = Object.assign(defaultConfig, config || {});
     // 重置游戏变量
@@ -28,10 +29,9 @@ var MahjongGame = function (data, config) {
     this.othersActionList = []; // 当前玩家打牌后，其他玩家的可执行动作列表
     // 重写游戏状态
     // 使用 javascript-state-machine 做状态机
-    // TODO: 添加各transition
     this.fsm = new StateMachine({
         init: STATE.NONE,
-        transitions: [
+        transitions: [ // 各transition
             {name: 'start', from: STATE.NONE, to: STATE.WAIT_PLAYER_ACTION},
             {name: 'playCard', from: STATE.WAIT_PLAYER_ACTION, to: STATE.WAIT_OHTERS_ACTION},
             {name: 'gang', from: [STATE.WAIT_PLAYER_ACTION,STATE.WAIT_OHTERS_ACTION], to: STATE.WAIT_PLAYER_ACTION},
@@ -121,6 +121,8 @@ var MahjongGame = function (data, config) {
             onGameOver () {
                 console.log('onGameOver');
                 self._sendToPlayer(JSON.stringify(self._getGameState()));
+                // TODO: 这里应存储更多的房间信息
+                Log.record(self.roomId, JSON.stringify({stateHistory: self.stateHistory}));
                 // self._sendToPlayer(JSON.stringify({msg:"游戏结束"}));
             }
         }
@@ -221,7 +223,7 @@ p._dealCards = function () {
 // 检查当前玩家能做什么动作，检测胡（自摸）、杠（暗杠、补杠）
 p._updateCurrentPlayerAction = function () {
     let playerId = this.currentPlayerId,
-        player = this.players[playerId]
+        player = this.players[playerId],
         actionCode = 0;
     player.canHu(player.newCard) && (actionCode += ACTION_CODE.Hu);
     let gangList = player.retrieveGangList();
@@ -313,37 +315,37 @@ p._getGameState = function (playerId) {
 
 // 通知玩家信息
 p._sendToPlayer = function (msg, playerId) {
-    // TODO: 测试时，直接用this.socket
     Log.log(`send to ${playerId || 'all'}`, msg);
+    // TODO: 不应该是这里存储历史状态的，方便测试先放这里
+    this.stateHistory.push(msg);
     // TODO: 暂时只返回给player1
     this.players[this.playerSequence[0]].socket.emit('news', msg);
 };
 
 // 实现Game的接口
 // 开始游戏
-p.start = function () {
+p.start = async function () {
     let self = this;
-    return new Promise((resolve, reject) => {
-        // TODO: 重置单局数据
-        self.othersActionList = [];
-        self.currentPlayerId = self.playerSequence[0];
-        self._resetCards();
-        self._resetPlayerData();
-        // 发牌
-        self._dealCards();
-        // TODO: 通知发牌结果
-        // 整理手牌
-        for (let playerId in self.players) self.players[playerId].sortHandCard();
-        // TODO: 通知整理手牌结果
+    // TODO: 重置单局数据
+    self.stateHistory = [];
+    self.othersActionList = [];
+    self.currentPlayerId = self.playerSequence[0];
+    self._resetCards();
+    self._resetPlayerData();
+    // 发牌
+    self._dealCards();
+    // TODO: 通知发牌结果
+    // 整理手牌
+    for (let playerId in self.players) self.players[playerId].sortHandCard();
+    // TODO: 通知整理手牌结果
 
-        // 回合制游戏属性初始化
-        this.turnCount = 0;
+    // 回合制游戏属性初始化
+    this.turnCount = 0;
 
-        // TODO: 进入等待当前玩家动作状态
-        self.fsm.start();
-        // self.state = self.STATE.WAIT_CURRENT_PLAYER_ACTION;
-        resolve({'error': false, result: '游戏开始'});
-    });
+    // TODO: 进入等待当前玩家动作状态
+    self.fsm.start();
+    // self.state = self.STATE.WAIT_CURRENT_PLAYER_ACTION;
+    return {'error': false, result: '游戏开始'};
 };
 // 断线重连
 p.reconnect = function (playerId, socket) {

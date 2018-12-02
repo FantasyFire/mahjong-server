@@ -17,8 +17,8 @@ p._resetData = function () {
     this.playingCard = 0;
     this.newCard = 0;
     this.groupCards = [];
-    this.chiList = undefined;
-    this.gangList = undefined;
+    this.chiList = 0;
+    this.gangList = 0;
     this.dirty.clear(); // 记录那些量被更新了
 };
 
@@ -35,8 +35,8 @@ p.getData = function (needMask, incremental) {
     if (!incremental || this.dirty.has(PLAYER_STATE.PLAYING_CARD)) res.playingCard = this.playingCard;
     if (!incremental || this.dirty.has(PLAYER_STATE.NEW_CARD)) res.newCard = this.newCard ? (needMask ? CARD.NONE : this.newCard) : this.newCard;
     if (!incremental || this.dirty.has(PLAYER_STATE.GROUP_CARDS)) res.groupCards = this.groupCards;
-    if (!incremental || this.dirty.has(PLAYER_STATE.CHI_LIST)) res.chiList = needMask ? undefined : this.chiList;
-    if (!incremental || this.dirty.has(PLAYER_STATE.GANG_LIST)) res.gangList = needMask ? undefined : (this.gangList||[]).map(g => g.card); // 客户端不需要知道这个是哪种杠（真的不需要吗？）
+    if (!incremental || this.dirty.has(PLAYER_STATE.CHI_LIST)) res.chiList = needMask ? 0 : this.chiList;
+    if (!incremental || this.dirty.has(PLAYER_STATE.GANG_LIST)) res.gangList = needMask ? 0 : (this.gangList||[]).map(g => g.card); // 客户端不需要知道这个是哪种杠（真的不需要吗？）
     // TODO: 应该不是放这里，因为获取状态会被多次调用（获取自己可见版本与别人可见版本2次）
     incremental && this.dirty.clear(); // 获取增量数据后，应清除增量记录
     return res;

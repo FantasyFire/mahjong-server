@@ -62,6 +62,7 @@
     function onNews(msg) {
         console.log(`收到消息：${msg}`);
         let json = gameData = JSON.parse(msg);
+        json.tableData.state == "none" && (lastGameData = null);
         lastGameData = lastGameData || json;
         lastGameData.tableData = json.tableData; // tableData暂时还是全量更新
         currentPlayerId = json.tableData.currentPlayerId;

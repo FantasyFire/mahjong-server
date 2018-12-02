@@ -23,6 +23,7 @@ MahjongRoom.prototype = {
         let self = this;
         // TODO: 构造游戏数据对象，如第几局，有什么算分规则之类的
         let data = {
+            roomId: this.roomId,
             playerSequence: this.playerSequence,
             users: this.playerSequence.map(pid => self.playerDatas[pid])
         };

@@ -16,7 +16,9 @@ module.exports = function (config) {
 		"fatal": 6
 	}
 
-	config.filename = config.filename || __dirname + '/logs.log';
+	config.logPath = config.logPath || __dirname + '/logs/';
+
+	config.filename = config.logPath + 'logs.log';
 
 	config.errorLevel = config.errorLevel || "log";
 
@@ -50,6 +52,13 @@ module.exports = function (config) {
 
 		exports[name] = log;
 	})
+
+	exports.record = function (roomid, content) {
+		fs.writeFileSync(config.filename + roomid + '.log', content);
+		// let file = fs.createWriteStream(config.filename + roomid + '.log', {flags: 'a'});
+		// file.write(content);
+		// file.close();
+	}
 
 	return exports;
 }

@@ -17,7 +17,7 @@ http.listen(3000, function () {
 });
 
 // websocket
-var room = new MahjongRoom('1000', MahjongGame);
+var room = new MahjongRoom("room1000", MahjongGame);
 
 io.on('connection', function (socket) {
     console.log('a user connected');
@@ -44,18 +44,15 @@ io.on('connection', function (socket) {
     socket.on('disconnect', function(){
         console.log('user disconnected');
     });
-    socket.on('login', function (msg) {
+    socket.on('login', async function (msg) {
         console.log('login: ' + msg);
         try {
             let data = JSON.parse(msg), playerId = data.playerId;
             if (!room.inState(room.STATE.INGAME)) {
-                room.joinIn({id:playerId, socket})
-                .then(res => {
-                    console.log('room.joinIn res:' + JSON.stringify(res));
-                    // TODO: 方便测试
-                    if (room.playerSequence.length == 4 && !room.inState(room.STATE.INGAME)) room.startGame();
-                })
-                .catch(console.error);
+                let res = await room.joinIn({id:playerId, socket})
+                console.log('room.joinIn res:' + JSON.stringify(res));
+                // TODO: 方便测试
+                if (room.playerSequence.length == 4 && !room.inState(room.STATE.INGAME)) room.startGame();
             } else {
                 room.reconnect(playerId, socket);
             }
