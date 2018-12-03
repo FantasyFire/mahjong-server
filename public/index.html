@@ -73,6 +73,8 @@
             // 将新的playerData合并到缓存的数据当中
             let playerData = {...lastGameData.playerDatas[playerId], ...json.playerDatas[playerId]};
             playerData.id = playerId;
+            // 特殊处理playedCards
+            playerData.playedCards = (lastGameData.playerDatas[playerId].playedCards||[]).concat(json.playerDatas[playerId].playedCards||[]);
             lastGameData.playerDatas[playerId] = playerData; // 将合并后的playerData更新到lastGameData中
             renderPlayerData(wrapper, playerData, playerId==currentPlayerId);
         }
