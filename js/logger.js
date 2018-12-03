@@ -54,10 +54,7 @@ module.exports = function (config) {
 	})
 
 	exports.record = function (roomid, content) {
-		fs.writeFileSync(config.filename + roomid + '.log', content);
-		// let file = fs.createWriteStream(config.filename + roomid + '.log', {flags: 'a'});
-		// file.write(content);
-		// file.close();
+		fs.writeFileSync(config.logPath + roomid + '.log', content);
 	}
 
 	return exports;

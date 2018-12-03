@@ -317,7 +317,7 @@ p._getGameState = function (playerId) {
 p._sendToPlayer = function (msg, playerId) {
     Log.log(`send to ${playerId || 'all'}`, msg);
     // TODO: 不应该是这里存储历史状态的，方便测试先放这里
-    this.stateHistory.push(msg);
+    this.stateHistory.push(JSON.parse(msg));
     // TODO: 暂时只返回给player1
     this.players[this.playerSequence[0]].socket.emit('news', msg);
 };
