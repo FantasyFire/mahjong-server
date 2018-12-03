@@ -39,7 +39,7 @@ p.getData = function (needMask, incremental) {
     if (!incremental || this.dirty.has(PLAYER_STATE.GANG_LIST)) res.gangList = needMask ? 0 : (this.gangList||[]).map(g => g.card); // 客户端不需要知道这个是哪种杠（真的不需要吗？）
     // TODO: 应该不是放这里，因为获取状态会被多次调用（获取自己可见版本与别人可见版本2次）
     incremental && this.dirty.clear(); // 获取增量数据后，应清除增量记录
-    return res;
+    return Object.keys(res).length > 0 ? res : undefined;
 };
 // 清除玩家动作数据（包括actionCode、chiList、gangList）
 p.clearActionData = function () {
