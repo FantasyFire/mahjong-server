@@ -27,6 +27,7 @@ var MahjongGame = function (data, config) {
     // 重置游戏变量
     // TODO: 不应该在构造的时候初始化，应该再start里初始化
     this.othersActionList = []; // 当前玩家打牌后，其他玩家的可执行动作列表
+    this.jsonCompressor = new GU.JsonCompressor;
     // 重写游戏状态
     // 使用 javascript-state-machine 做状态机
     this.fsm = new StateMachine({
@@ -318,6 +319,8 @@ p._sendToPlayer = function (msg, playerId) {
     Log.log(`send to ${playerId || 'all'}`, msg);
     // TODO: 不应该是这里存储历史状态的，方便测试先放这里
     this.stateHistory.push(JSON.parse(msg));
+    // TODO: 到底应该先压缩再存History还是先存呢？
+    // msg = this.jsonCompressor.compress(msg);
     // TODO: 暂时只返回给player1
     this.players[this.playerSequence[0]].socket.emit('news', msg);
 };

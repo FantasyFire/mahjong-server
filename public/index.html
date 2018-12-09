@@ -20,6 +20,7 @@
 <script src="lib/socket.io.js"></script>
 <script src="lib/jquery-1.11.1.js"></script>
 <script src="js/component.js"></script>
+<script src="js/gameUtils.js"></script>
 <body>
     <div class="mahjongTable">
         <div id="player1" class="playerTable"></div>
@@ -60,6 +61,7 @@
     });
 
     function onNews(msg) {
+
         console.log(`收到消息：${msg}`);
         let json = gameData = JSON.parse(msg);
         json.tableData.state == "none" && (lastGameData = null);
