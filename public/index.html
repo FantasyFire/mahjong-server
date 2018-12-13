@@ -62,11 +62,15 @@
     });
 
     function onNews(msg) {
+        let originLength = msg.length;
+        console.log(`收到消息：${msg}`);
         let uncompressMsg = jc.fromCompressString(msg);
         jc.importUncompressMap(uncompressMsg.uncompressMap);
         delete uncompressMsg.uncompressMap;
         let json = jc.uncompress(uncompressMsg);
-        console.log(`收到消息：${json}`);
+        let realMsgLength = JSON.stringify(json).length;
+        console.log(`消息解压：${JSON.stringify(json)}`);
+        console.log(`解压前长度：${originLength}，实际消息长度：${realMsgLength}，压缩率：${(originLength/realMsgLength*100).toFixed(2)}%`);
         // let json = gameData = JSON.parse(msg);
         json.tableData.state == "none" && (lastGameData = null);
         lastGameData = lastGameData || json;

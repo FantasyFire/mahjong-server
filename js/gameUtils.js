@@ -125,7 +125,8 @@
             for (let key in json) {
                 res += `${key}:${this.toCompressString(json[key])},`;
             }
-            return res.substr(0, res.length-1) + "}";
+            let lastIdx = res.length-1;
+            return (res[lastIdx]==',' ? res.substr(0, lastIdx) : res) + "}";
         }
         /**
          * 解压所给的json
@@ -169,7 +170,10 @@
                 return map2Json(this._uncompressMap);
             } else {
                 let json = {};
-                for (let key of this._newKeyList) json[key] = this._compressMap.get(key);
+                for (let key of this._newKeyList) {
+                    let compressedKey = this._compressMap.get(key);
+                    json[compressedKey] = key;
+                }
                 this._newKeyList = [];
                 return json;
             }
