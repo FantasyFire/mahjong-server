@@ -89,28 +89,43 @@
         constructor () {
             this._compressMap = new Map;
             this._uncompressMap = new Map;
+            this._newKeyList = [];
         }
         /**
          * 压缩所给的json，返回压缩后的json及对应的解压映射表
          * 应注意输入json必须为plainObject
-         * @param {Object} json - 带压缩json
+         * @param {Object} json - 待压缩json
          * @return {Object}
          */
         compress (json) {
             if (!isPlainObject(json)) return json;
-            let compressedJson = {};
+            let compressedJson = {}, // 压缩后的json
+                newKeyList = []; // 未出现过的key列表
             for (let key in json) {
                 let compressedKey = "";
                 if (this._compressMap.has(key)) {
                     compressedKey = this._compressMap.get(key);
                 } else {
+                    newKeyList.push(key);
                     compressedKey = this._getNextCompressKey();
                     this._compressMap.set(key, compressedKey);
                     this._uncompressMap.set(compressedKey, key);
                 }
                 compressedJson[compressedKey] = this.compress(json[key]);
             }
+            this._newKeyList = this._newKeyList.concat(newKeyList);
             return compressedJson;
+        }
+        /**
+         * 将json转换为压缩字符串
+         */
+        toCompressString (json) {
+            if (!isPlainObject(json)) return JSON.stringify(json);
+            let res = "{";
+            for (let key in json) {
+                res += `${key}:${this.toCompressString(json[key])},`;
+            }
+            return res.substr(0, res.length-1) + "}";
         }
         /**
          * 解压所给的json
@@ -123,6 +138,41 @@
                 uncompressedJson[uncompressedKey] = this.uncompress(json[key]);
             }
             return uncompressedJson;
+        }
+        /**
+         * 从压缩json字符串转换为json
+         */
+        fromCompressString (str) {
+            let jsonStr = str.replace(/'/g,'"').replace(/[{,]{1}[^":,]+:/g, function (str) {
+                return str[0] + '"' + str.substr(1, str.length-2) + '"' + str[str.length-1];
+            });
+            return JSON.parse(jsonStr);
+        }
+        /**
+         * 导入解压映射表
+         */
+        importUncompressMap (uncompressMap) {
+            for (let compressedKey in uncompressMap) {
+                let key = uncompressMap[compressedKey];
+                this._compressMap.set(key, compressedKey);
+                this._uncompressMap.set(compressedKey, key);
+            }
+        }
+        /**
+         * 导出解压映射表
+         * @param {Boolean} fullList - 是否导出整张映射表（否时，只返回未导出过的部分）
+         * @return {Objecet} - 解压映射表，json格式
+         */
+        exportUncompressMap (fullList = false) {
+            if (fullList) {
+                this._newKeyList = [];
+                return map2Json(this._uncompressMap);
+            } else {
+                let json = {};
+                for (let key of this._newKeyList) json[key] = this._compressMap.get(key);
+                this._newKeyList = [];
+                return json;
+            }
         }
         // 根据当前已生成压缩key值数量获取下一个压缩key值
         _getNextCompressKey () {
@@ -179,4 +229,10 @@
             class2type[ toString.call(obj) ] || "object" :
             typeof obj;
     };
+
+    var map2Json = exports.map2Json = function (map) {
+        let json = {};
+        for (let [k,v] of map) json[k] = v;
+        return json;
+    }
 }(typeof(window) == "undefined" ? exports : window))

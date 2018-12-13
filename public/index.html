@@ -47,6 +47,7 @@
     var sockets = {'player1':null,'player2':null,'player3':null,'player4':null}, 
         currentPlayerId = "", state = "", gameData = null;
     var lastGameData = null; // 缓存上一次接收的gameData
+    var jc = new JsonCompressor;
     $(function () {
         let i = 0;
         for (let playerId in sockets) {
@@ -61,9 +62,12 @@
     });
 
     function onNews(msg) {
-
-        console.log(`收到消息：${msg}`);
-        let json = gameData = JSON.parse(msg);
+        let uncompressMsg = jc.fromCompressString(msg);
+        jc.importUncompressMap(uncompressMsg.uncompressMap);
+        delete uncompressMsg.uncompressMap;
+        let json = jc.uncompress(uncompressMsg);
+        console.log(`收到消息：${json}`);
+        // let json = gameData = JSON.parse(msg);
         json.tableData.state == "none" && (lastGameData = null);
         lastGameData = lastGameData || json;
         lastGameData.tableData = json.tableData; // tableData暂时还是全量更新

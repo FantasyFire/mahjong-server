@@ -5,7 +5,8 @@ const Game = require('./game.js');
 const util = require('util');
 const StateMachine = require('javascript-state-machine');
 // TODO: 方便测试，这里写死log路径
-const Log = require('./logger.js')({logPath:"e:/project/mahjong-server/logs/"});
+// const Log = require('./logger.js')({logPath:"e:/project/mahjong-server/logs/"});
+const Log = require('./logger.js')({logPath:"c:/project/mahjong-server/logs/"});
 const Cheat = require('./cheatData.js');
 
 var MahjongGame = function (data, config) {
@@ -317,12 +318,16 @@ p._getGameState = function (playerId) {
 // 通知玩家信息
 p._sendToPlayer = function (msg, playerId) {
     Log.log(`send to ${playerId || 'all'}`, msg);
-    // TODO: 不应该是这里存储历史状态的，方便测试先放这里
-    this.stateHistory.push(JSON.parse(msg));
+    // TODO: 这里为了方便，将msg转回JSON格式，实际应该将调用_sendToPlayer的地方的JSON.stringify都去掉
     // TODO: 到底应该先压缩再存History还是先存呢？
-    // msg = this.jsonCompressor.compress(msg);
+    let msgJson = JSON.parse(msg);
+    // TODO: 不应该是这里存储历史状态的，方便测试先放这里
+    this.stateHistory.push(msgJson);
+    msgJson = this.jsonCompressor.compress(msgJson); // 压缩json
+    msgJson.uncompressMap = this.jsonCompressor.exportUncompressMap(); // 导出新的解压表
+    let msgCompressedStr = this.jsonCompressor.toCompressString(msgJson); // 转成压缩字符串
     // TODO: 暂时只返回给player1
-    this.players[this.playerSequence[0]].socket.emit('news', msg);
+    this.players[this.playerSequence[0]].socket.emit('news', msgCompressedStr);
 };
 
 // 实现Game的接口
