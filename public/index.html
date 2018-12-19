@@ -76,6 +76,7 @@
         lastGameData.tableData = json.tableData; // tableData暂时还是全量更新
         currentPlayerId = json.tableData.currentPlayerId;
         state = json.tableData.state;
+        gameData = json;
         // playerData增量更新
         for (let playerId in json.playerDatas) {
             let wrapper = document.querySelector('#'+playerId);

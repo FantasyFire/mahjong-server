@@ -301,7 +301,7 @@ p._getOtherPlayerIdsByOrder = function (playerId) {
 
 // 关于通信
 // TODO: 返回一对某玩家的游戏状态
-p._getGameState = function (playerId) {
+p._getGameState = function (playerId, incremental = true) {
     let self = this;
     // 桌面数据应该是对所有玩家公开的
     let tableData = {
@@ -311,12 +311,12 @@ p._getGameState = function (playerId) {
     };
     // TODO: 玩家数据，本人数据公开，其他玩家数据屏蔽（屏蔽考虑加一个私有方法实现）
     let playerDatas = {};
-    this.playerSequence.forEach(pid => playerDatas[pid] = self.players[pid].getData(false, true));
+    this.playerSequence.forEach(pid => playerDatas[pid] = self.players[pid].getData(false, incremental));
     return {tableData, playerDatas};
 };
 
 // 通知玩家信息
-p._sendToPlayer = function (msg, playerId) {
+p._sendToPlayer = function (msg, playerId, fullUncompressMap = false) {
     Log.log(`send to ${playerId || 'all'}`, msg);
     // TODO: 这里为了方便，将msg转回JSON格式，实际应该将调用_sendToPlayer的地方的JSON.stringify都去掉
     // TODO: 到底应该先压缩再存History还是先存呢？
@@ -324,7 +324,7 @@ p._sendToPlayer = function (msg, playerId) {
     // TODO: 不应该是这里存储历史状态的，方便测试先放这里
     this.stateHistory.push(msgJson);
     msgJson = this.jsonCompressor.compress(msgJson); // 压缩json
-    msgJson.uncompressMap = this.jsonCompressor.exportUncompressMap(); // 导出新的解压表
+    msgJson.uncompressMap = this.jsonCompressor.exportUncompressMap(fullUncompressMap); // 导出新的解压表
     let msgCompressedStr = this.jsonCompressor.toCompressString(msgJson); // 转成压缩字符串
     // TODO: 暂时只返回给player1
     this.players[this.playerSequence[0]].socket.emit('news', msgCompressedStr);
@@ -332,6 +332,9 @@ p._sendToPlayer = function (msg, playerId) {
 
 // 实现Game的接口
 // 开始游戏
+p.canStart = function () {
+    return true;
+};
 p.start = async function () {
     let self = this;
     // TODO: 重置单局数据
@@ -358,7 +361,7 @@ p.start = async function () {
 // 断线重连
 p.reconnect = function (playerId, socket) {
     this.players[playerId].socket = socket;
-    this._sendToPlayer(JSON.stringify(this._getGameState(playerId)), playerId);
+    this._sendToPlayer(JSON.stringify(this._getGameState(playerId, false)), playerId, true);
 };
 
 // 玩家动作接口

@@ -70,7 +70,7 @@
 {
     handCards: Array.<Number>, // 手牌数组，手牌指除去已组合的牌、刚摸到的牌外的牌
     playedCards: Array.<Number>, // 已打出的牌（指未被吃碰杠胡的，完全被打出的牌）
-    playCard: Number, // 当前打出的牌（等待其他玩家是否吃碰杠胡）
+    playingCard: Number, // 当前打出的牌（等待其他玩家确认是否吃碰杠胡）
     newCard: Number, // 刚摸到的牌
     groupCards: Array.<Object>, // 吃碰杠后的组合好的牌
 }
@@ -117,12 +117,16 @@
 
 8、
 玩家状态的完整结构（以后考虑将key、value简化压缩）
+实际传到前端的是一个增量对象
 {
     actionCode: Number,
     groupCards: Array.<Object>, // TODO: 下面详细解释
     handCards: Array.<Number>,
     newCard: Number|undefined,
-    playCard: Number|undefined
+    playingCard: Number|undefined,
+    playedCards: Number|Array.<Number>, // 在后端此处为玩家完整的已出牌数组。在传递到前端时，此处为最新的已出牌,
+    chiList: Array.<Object>, // 可吃的组合列表
+    gangList: Array.<Number>, // 可杠的牌列表
 }
 
 9、
@@ -160,7 +164,11 @@ fsm 对于A->A 不会触发 onA 的事件
 
 mahjongGame里的turnCount递增未实现
 
-接下来主要考虑服务端到前端的数据通信如何优化
-1、将传递信息从全量状态改为增量状态
-增量状态（player.dirty）什么时候清除？
-actionCode清除有问题
+任务备忘
+考虑服务端到前端的数据通信如何优化
+1、将传递信息从全量状态改为增量状态（已完成）
+2、加入压缩/解压机制 （后端->前端部分已完成）
+
+考虑加入超时自动打出右手第一张牌的机制
+
+考虑为game类加入joinIn、canStart接口，以达到更通用的模型

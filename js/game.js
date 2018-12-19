@@ -16,6 +16,10 @@ p.start = function () {
     console.error('接口start未实现 in Game.start');
     return false;
 };
+p.joinIn = function (user) {
+    console.error('接口joinIn未实现 in Game.joinIn');
+    return false;
+};
 p.gameOver = function () {
     console.error('接口gameOver未实现 in Game.gameOver');
     return false;
