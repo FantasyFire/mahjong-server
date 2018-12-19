@@ -70,8 +70,7 @@
         let json = jc.uncompress(uncompressMsg);
         let realMsgLength = JSON.stringify(json).length;
         console.log(`消息解压：${JSON.stringify(json)}`);
-        console.log(`解压前长度：${originLength}，实际消息长度：${realMsgLength}，压缩率：${(originLength/realMsgLength*100).toFixed(2)}%`);
-        // let json = gameData = JSON.parse(msg);
+        console.log(`收到消息长度：${originLength}，有效信息长度：${realMsgLength}，压缩效率（(有效信息长度-收到消息长度)/有效信息长度）：${((realMsgLength-originLength)/realMsgLength*100).toFixed(2)}%`);
         json.tableData.state == "none" && (lastGameData = null);
         lastGameData = lastGameData || json;
         lastGameData.tableData = json.tableData; // tableData暂时还是全量更新
