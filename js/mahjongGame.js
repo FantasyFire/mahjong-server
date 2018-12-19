@@ -55,7 +55,7 @@ var MahjongGame = function (data, config) {
                 console.log('onBeforePlayCard');
                 // 获取其他玩家可执行动作队列
                 self.othersActionList = self._retrieveOthersActionList();
-                // 这里应该先将当前玩家打牌的状态更新到客户端
+                // 先将当前玩家打牌的状态更新到客户端
                 self._sendToPlayer(JSON.stringify(self._getGameState()));
             },
             onBeforeGang (transition, playerId) {

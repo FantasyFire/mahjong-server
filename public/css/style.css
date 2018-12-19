@@ -30,6 +30,10 @@
     font-size: 15px;
 }
 
+.selected {
+    bottom: 10px;
+}
+
 .mahjongTable {
     position: relative;
     min-width: 1000px;

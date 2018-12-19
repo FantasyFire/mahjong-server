@@ -26,19 +26,25 @@ class Component {
 class Card extends Component {
     constructor (props) {
         super(props);
-        this.state = {visible: true, selected: false};
+        this.state = {selected: false};
     }
 
     onclick () {
-        this.setState({
-            visible: true, selected: !this.state.selected
-        });
+        if (this.state.selected) {
+            this.props.onPlayCard && this.props.onPlayCard(this.props.index);
+        } else {
+            this.setState({selected: true});
+        }
+    }
+
+    unselect () {
+        this.setState({selected: false});
     }
 
     render () {
         return `
-            <div class='card' style='bottom:${this.state.selected?'10px':''};background-color:${this.state.visible?'white':'green'}'>
-                <div class='text'>${this.state.visible?this.props.text:''}</div>
+            <div class="card${this.state.selected?' selected':''}" ${this.props.index==undefined ? "" : `onclick="playCard(${this.props.index})"`} style="background-color:#${['f99','9f9','99f','fff','fff','fff'][number2index(this.props.number)]}">
+                <div class="text">${number2text(this.props.number)}</div>
             </div>
         `;
     }
