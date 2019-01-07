@@ -4,8 +4,8 @@ const express = require('express');
 const app = express();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
-const MahjongRoom = require('./js/mahjongRoom');
-const MahjongGame = require('./js/mahjongGame');
+const MahjongRoom = require('./js/mahjong/mahjongRoom');
+const MahjongGame = require('./js/mahjong/mahjongGame');
 
 // http
 app.get('/', function (req, res) {
@@ -21,15 +21,6 @@ var room = new MahjongRoom("room1000", MahjongGame);
 
 io.on('connection', function (socket) {
     console.log('a user connected');
-    // co(function* () {
-    //     yield room.joinIn({id:'player1', socket});
-    //     yield room.joinIn({id:'player2', socket});
-    //     yield room.joinIn({id:'player3', socket});
-    //     yield room.joinIn({id:'player4', socket});
-    //     room._initGame();
-        
-    //     yield room.startGame();
-    // });
     socket.on('chat message', function(msg){
         console.log('message: ' + msg);
         try {

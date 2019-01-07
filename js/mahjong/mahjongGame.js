@@ -1,12 +1,12 @@
-const GU = require('./gameUtils.js');
+const GU = require('../gameUtils.js');
 const {ACTION_CODE, STATE} = require('./mahjongConstants.js');
 const MahjongPlayer = require('./mahjongPlayer.js');
-const Game = require('./game.js');
+const Game = require('../base/game.js');
 const util = require('util');
 const StateMachine = require('javascript-state-machine');
 // TODO: 方便测试，这里写死log路径
 // const Log = require('./logger.js')({logPath:"e:/project/mahjong-server/logs/"});
-const Log = require('./logger.js')({logPath:"c:/project/mahjong-server/logs/"});
+const Log = require('../logger.js')({logPath:"c:/project/mahjong-server/logs/"});
 const Cheat = require('./cheatData.js');
 
 var MahjongGame = function (data, config) {

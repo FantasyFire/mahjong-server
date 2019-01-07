@@ -1,4 +1,4 @@
-const GU = require('./gameUtils.js');
+const GU = require('../gameUtils.js');
 
 // 作弊数据
 let cheat = [];

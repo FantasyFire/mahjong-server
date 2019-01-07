@@ -1,4 +1,4 @@
-const Room = require('./room.js');
+const Room = require('../base/room.js');
 const util = require('util');
 /**
  * 麻将房间基类，实现房间类的接口

@@ -1,4 +1,4 @@
-const Game = require('./game.js');
+const Game = require('./base/game.js');
 const util = require('util');
 
 var FrameSyncGame = function () {

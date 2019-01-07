@@ -1,4 +1,4 @@
-const GU = require('./gameUtils.js');
+const GU = require('../gameUtils.js');
 const {ACTION_CODE, CARD, PLAYER_STATE} = require('./mahjongConstants.js');
 const checkHu = require('./checkHu.js');
 
