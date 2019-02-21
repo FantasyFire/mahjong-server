@@ -31,6 +31,11 @@
         return shuffled;
     };
 
+    /**
+     * 深复制
+     * @param {any} any - 需要复制的值，可以是任何类型
+     * @return {any} - 复制的值
+     */
     var deepCopy = exports.deepCopy = function (any) {
         return _deepCopy(any, []);
     };

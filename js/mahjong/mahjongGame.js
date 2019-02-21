@@ -28,7 +28,7 @@ var MahjongGame = function (data, config) {
     // 重置游戏变量
     // TODO: 不应该在构造的时候初始化，应该再start里初始化
     this.othersActionList = []; // 当前玩家打牌后，其他玩家的可执行动作列表
-    this.jsonCompressor = new GU.JsonCompressor;
+    this.jsonCompressor = new GU.JsonCompressor; // json压缩工具
     // 重写游戏状态
     // 使用 javascript-state-machine 做状态机
     this.fsm = new StateMachine({
@@ -366,10 +366,10 @@ p.reconnect = function (playerId, socket) {
 
 // 玩家动作接口
 // 玩家动作总接口
-// TODO: 这里通过状态机统一验证player能否做action，然后再分别调用子action动作进行详细验证
+// 这里通过状态机统一验证player能否做action，然后再分别调用子action动作进行详细验证
 p.doAction = function (playerId, action, data) {
     let message = '';
-    // TODO: 缺少动作合法性判断（动作是否存在）
+    // 缺少动作合法性判断（动作是否存在）
     // TODO: 这里的错误信息应该更详细
     if (this.fsm.is(STATE.WAIT_PLAYER_ACTION) && playerId !== this.currentPlayerId) {
         message = '在等待当前玩家动作时，非当前玩家请求动作';
@@ -444,7 +444,7 @@ p.peng = function (playerId) {
         player = this.players[playerId];
     if (player.actionCode&ACTION_CODE.Peng) {
         player.pengCard(card, currentPlayer);
-        return {'error': false, 'result': `玩家${playerId}碰${card}玩家${this.currentPlayerId}打出的牌${card}`};
+        return {'error': false, 'result': `玩家${playerId}碰玩家${this.currentPlayerId}打出的牌${card}`};
     } else {
         return {'error': true, 'result': `玩家${playerId}不满足碰的条件，当前玩家${this.currentPlayerId}打出牌${card}`};
     }
