@@ -435,7 +435,7 @@ p.gang = function (playerId, index) {
     }
 };
 /**
- * 杠（明杠、暗杠、碰后杠）
+ * 碰
  * @param {String} playerId - 玩家id
  */
 p.peng = function (playerId) {
