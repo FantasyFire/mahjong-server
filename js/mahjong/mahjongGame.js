@@ -4,9 +4,7 @@ const MahjongPlayer = require('./mahjongPlayer.js');
 const Game = require('../base/game.js');
 const util = require('util');
 const StateMachine = require('javascript-state-machine');
-// TODO: 方便测试，这里写死log路径
-// const Log = require('./logger.js')({logPath:"e:/project/mahjong-server/logs/"});
-const Log = require('../logger.js')({logPath:"c:/project/mahjong-server/logs/"});
+const Log = require('../logger.js')({logPath:"logs/"});
 const Cheat = require('./cheatData.js');
 
 var MahjongGame = function (data, config) {
@@ -132,6 +130,173 @@ var MahjongGame = function (data, config) {
 };
 
 var p = MahjongGame.prototype;
+
+// 实现Game的接口
+// 开始游戏
+p.canStart = function () {
+    return true;
+};
+p.start = async function () {
+    let self = this;
+    // TODO: 重置单局数据
+    self.stateHistory = [];
+    self.othersActionList = [];
+    self.currentPlayerId = self.playerSequence[0];
+    self._resetCards();
+    self._resetPlayerData();
+    // 发牌
+    self._dealCards();
+    // TODO: 通知发牌结果
+    // 整理手牌
+    for (let playerId in self.players) self.players[playerId].sortHandCard();
+    // TODO: 通知整理手牌结果
+
+    // 回合制游戏属性初始化
+    this.turnCount = 0;
+
+    // TODO: 进入等待当前玩家动作状态
+    self.fsm.start();
+    // self.state = self.STATE.WAIT_CURRENT_PLAYER_ACTION;
+    return {'error': false, result: '游戏开始'};
+};
+// 断线重连
+p.reconnect = function (playerId, socket) {
+    this.players[playerId].socket = socket;
+    this._sendToPlayer(JSON.stringify(this._getGameState(playerId, false)), playerId, true);
+};
+
+// 玩家动作接口
+// 玩家动作总接口
+// 这里通过状态机统一验证player能否做action，然后再分别调用子action动作进行详细验证
+p.doAction = function (playerId, action, data) {
+    let message = '';
+    // 缺少动作合法性判断（动作是否存在）
+    // TODO: 这里的错误信息应该更详细
+    if (this.fsm.is(STATE.WAIT_PLAYER_ACTION) && playerId !== this.currentPlayerId) {
+        message = '在等待当前玩家动作时，非当前玩家请求动作';
+    }
+    if (this.fsm.is(STATE.WAIT_OHTERS_ACTION) && playerId === this.currentPlayerId) {
+        if (playerId === this.currentPlayerId)
+            message = '在等待其他玩家动作时，当前玩家请求动作';
+        // to check: 此时this.othersActionList能确保有至少1个元素么？
+        else if (playerId !== this.othersActionList[0].playerId)
+            message = '在等待其他玩家动作时，非当前询问玩家请求动作';
+    }
+    if (this.fsm.cannot(action)) {
+        message = '当前游戏状态下，玩家不可以执行该动作';
+    }
+    if (message) {
+        return {'error': true, 'result': message};
+    } else {
+        // to check: 是否所有动作都能正确调用，及返回
+        let res = this[action](playerId, data);
+        if (res.error) {
+            return res;
+        } else {
+            this.fsm[action](playerId);
+            return res;
+        }
+    }
+};
+// 打出一张牌
+p.playCard = function (playerId, cardIndex) {
+    let message = '', player = this.players[playerId];
+    // if (!this.inState(this.STATE.WAIT_CURRENT_PLAYER_ACTION)) {
+    if (player.hasCardIndex(cardIndex)) {
+        message = `玩家${playerId}手中没有第${cardIndex+1}张牌`;
+    }
+    if (message) { // 如果有message，意味着有错误
+        return {'error': true, 'result': message};
+    } else {
+        player.playCard(cardIndex);
+        player.sortHandCard();
+        message = `玩家${playerId}打出${player.playingCard}`;
+        return {'error': false, 'result': message};
+    }
+};
+/**
+ * 杠（明杠、暗杠、碰后杠）
+ * @param {String} playerId - 玩家id
+ * @param {Number} index - 第index种杠法
+ */
+p.gang = function (playerId, index) {
+    let player = this.players[playerId],
+        gangData = (player.gangList||[])[index],
+        currentPlayer = this.players[this.currentPlayerId];
+    if (gangData) {
+        let actionCode = gangData.actionCode, card = gangData.card;
+        if (actionCode === ACTION_CODE.PengHouGang) {
+            // TODO: 碰后杠需要轮询确认是否有人抢杠
+        }
+        player.gangCard(card, actionCode, currentPlayer);
+        // TODO: 应详细描述是什么杠，杠谁的什么牌
+        return {'error': false, 'result': `玩家${playerId}杠${card}`};
+    } else {
+        return {'error': true, 'result': `玩家${playerId}不存在第${index}种杠法，playerData：${JSON.stringify(player.getData())}`};
+    }
+};
+/**
+ * 碰
+ * @param {String} playerId - 玩家id
+ */
+p.peng = function (playerId) {
+    let currentPlayer = this.players[this.currentPlayerId],
+        card = currentPlayer.playingCard,
+        player = this.players[playerId];
+    if (player.actionCode&ACTION_CODE.Peng) {
+        player.pengCard(card, currentPlayer);
+        return {'error': false, 'result': `玩家${playerId}碰玩家${this.currentPlayerId}打出的牌${card}`};
+    } else {
+        return {'error': true, 'result': `玩家${playerId}不满足碰的条件，当前玩家${this.currentPlayerId}打出牌${card}`};
+    }
+};
+/**
+ * 吃
+ * @param {String} playerId - 玩家id
+ * @param {Array.<Number>} index - 第index种吃法
+ */
+p.chi = function (playerId, index) {
+    if (this._getNextPlayerId() !== playerId) {
+        return {'error': true, 'result': `玩家非当前玩家的下家`};
+    }
+    let player = this.players[playerId],
+        chiData = (player.chiList||[])[index],
+        currentPlayer = this.players[this.currentPlayerId];
+    if (chiData) {
+        player.chi(chiData[0], chiData.slice(1), currentPlayer);
+        return {'error': false, 'result': `玩家${playerId}吃玩家${this.currentPlayerId}打出的牌${chiData[0]}`};
+    } else {
+        return {'error': true, 'result': `玩家${playerId}不满足吃的条件，当前玩家${this.currentPlayerId}`};
+    }
+};
+
+/**
+ * 过
+ * @param {String} playerId - 玩家id
+ */
+p.pass = function (playerId) {
+    // 除了合法性检测不需要干别的事
+    let player = this.players[playerId];
+    if (player.actionCode&ACTION_CODE.Pass) {
+        return {'error': false, 'result': `玩家${playerId}跳过，他当前可执行动作为${player.actionCode}`};
+    } else {
+        return {'error': true, 'result': `玩家${playerId}不可执行过动作`};
+    }
+};
+
+/**
+ * 胡
+ * @param {String} playerId - 玩家id
+ */
+p.hu = function (playerId) {
+    // 除了合法性检测不需要干别的事
+    let player = this.players[playerId];
+    if (player.actionCode&ACTION_CODE.Hu) {
+        return {'error': false, 'result': `玩家${playerId}胡牌，他当前可执行动作为${player.actionCode}`};
+    } else {
+        return {'error': true, 'result': `玩家${playerId}不可执行过动作`};
+    }
+};
 
 // 私有接口
 // 用于管理麻将牌
@@ -330,172 +495,7 @@ p._sendToPlayer = function (msg, playerId, fullUncompressMap = false) {
     this.players[this.playerSequence[0]].socket.emit('news', msgCompressedStr);
 };
 
-// 实现Game的接口
-// 开始游戏
-p.canStart = function () {
-    return true;
-};
-p.start = async function () {
-    let self = this;
-    // TODO: 重置单局数据
-    self.stateHistory = [];
-    self.othersActionList = [];
-    self.currentPlayerId = self.playerSequence[0];
-    self._resetCards();
-    self._resetPlayerData();
-    // 发牌
-    self._dealCards();
-    // TODO: 通知发牌结果
-    // 整理手牌
-    for (let playerId in self.players) self.players[playerId].sortHandCard();
-    // TODO: 通知整理手牌结果
 
-    // 回合制游戏属性初始化
-    this.turnCount = 0;
-
-    // TODO: 进入等待当前玩家动作状态
-    self.fsm.start();
-    // self.state = self.STATE.WAIT_CURRENT_PLAYER_ACTION;
-    return {'error': false, result: '游戏开始'};
-};
-// 断线重连
-p.reconnect = function (playerId, socket) {
-    this.players[playerId].socket = socket;
-    this._sendToPlayer(JSON.stringify(this._getGameState(playerId, false)), playerId, true);
-};
-
-// 玩家动作接口
-// 玩家动作总接口
-// 这里通过状态机统一验证player能否做action，然后再分别调用子action动作进行详细验证
-p.doAction = function (playerId, action, data) {
-    let message = '';
-    // 缺少动作合法性判断（动作是否存在）
-    // TODO: 这里的错误信息应该更详细
-    if (this.fsm.is(STATE.WAIT_PLAYER_ACTION) && playerId !== this.currentPlayerId) {
-        message = '在等待当前玩家动作时，非当前玩家请求动作';
-    }
-    if (this.fsm.is(STATE.WAIT_OHTERS_ACTION) && playerId === this.currentPlayerId) {
-        if (playerId === this.currentPlayerId)
-            message = '在等待其他玩家动作时，当前玩家请求动作';
-        // to check: 此时this.othersActionList能确保有至少1个元素么？
-        else if (playerId !== this.othersActionList[0].playerId)
-            message = '在等待其他玩家动作时，非当前询问玩家请求动作';
-    }
-    if (this.fsm.cannot(action)) {
-        message = '当前游戏状态下，玩家不可以执行该动作';
-    }
-    if (message) {
-        return {'error': true, 'result': message};
-    } else {
-        // to check: 是否所有动作都能正确调用，及返回
-        let res = this[action](playerId, data);
-        if (res.error) {
-            return res;
-        } else {
-            this.fsm[action](playerId);
-            return res;
-        }
-    }
-};
-// 打出一张牌
-p.playCard = function (playerId, cardIndex) {
-    let message = '', player = this.players[playerId];
-    // if (!this.inState(this.STATE.WAIT_CURRENT_PLAYER_ACTION)) {
-    if (player.hasCardIndex(cardIndex)) {
-        message = `玩家${playerId}手中没有第${cardIndex+1}张牌`;
-    }
-    if (message) { // 如果有message，意味着有错误
-        return {'error': true, 'result': message};
-    } else {
-        player.playCard(cardIndex);
-        player.sortHandCard();
-        message = `玩家${playerId}打出${player.playingCard}`;
-        return {'error': false, 'result': message};
-    }
-};
-/**
- * 杠（明杠、暗杠、碰后杠）
- * @param {String} playerId - 玩家id
- * @param {Number} index - 第index种杠法
- */
-p.gang = function (playerId, index) {
-    let player = this.players[playerId],
-        gangData = (player.gangList||[])[index],
-        currentPlayer = this.players[this.currentPlayerId];
-    if (gangData) {
-        let actionCode = gangData.actionCode, card = gangData.card;
-        if (actionCode === ACTION_CODE.PengHouGang) {
-            // TODO: 碰后杠需要轮询确认是否有人抢杠
-        }
-        player.gangCard(card, actionCode, currentPlayer);
-        // TODO: 应详细描述是什么杠，杠谁的什么牌
-        return {'error': false, 'result': `玩家${playerId}杠${card}`};
-    } else {
-        return {'error': true, 'result': `玩家${playerId}不存在第${index}种杠法，playerData：${JSON.stringify(player.getData())}`};
-    }
-};
-/**
- * 碰
- * @param {String} playerId - 玩家id
- */
-p.peng = function (playerId) {
-    let currentPlayer = this.players[this.currentPlayerId],
-        card = currentPlayer.playingCard,
-        player = this.players[playerId];
-    if (player.actionCode&ACTION_CODE.Peng) {
-        player.pengCard(card, currentPlayer);
-        return {'error': false, 'result': `玩家${playerId}碰玩家${this.currentPlayerId}打出的牌${card}`};
-    } else {
-        return {'error': true, 'result': `玩家${playerId}不满足碰的条件，当前玩家${this.currentPlayerId}打出牌${card}`};
-    }
-};
-/**
- * 吃
- * @param {String} playerId - 玩家id
- * @param {Array.<Number>} index - 第index种吃法
- */
-p.chi = function (playerId, index) {
-    if (this._getNextPlayerId() !== playerId) {
-        return {'error': true, 'result': `玩家非当前玩家的下家`};
-    }
-    let player = this.players[playerId],
-        chiData = (player.chiList||[])[index],
-        currentPlayer = this.players[this.currentPlayerId];
-    if (chiData) {
-        player.chi(chiData[0], chiData.slice(1), currentPlayer);
-        return {'error': false, 'result': `玩家${playerId}吃玩家${this.currentPlayerId}打出的牌${chiData[0]}`};
-    } else {
-        return {'error': true, 'result': `玩家${playerId}不满足吃的条件，当前玩家${this.currentPlayerId}`};
-    }
-};
-
-/**
- * 过
- * @param {String} playerId - 玩家id
- */
-p.pass = function (playerId) {
-    // 除了合法性检测不需要干别的事
-    let player = this.players[playerId];
-    if (player.actionCode&ACTION_CODE.Pass) {
-        return {'error': false, 'result': `玩家${playerId}跳过，他当前可执行动作为${player.actionCode}`};
-    } else {
-        return {'error': true, 'result': `玩家${playerId}不可执行过动作`};
-    }
-};
-
-/**
- * 胡
- * @param {String} playerId - 玩家id
- */
-p.hu = function (playerId) {
-    // 除了合法性检测不需要干别的事
-    let player = this.players[playerId];
-    if (player.actionCode&ACTION_CODE.Hu) {
-        return {'error': false, 'result': `玩家${playerId}胡牌，他当前可执行动作为${player.actionCode}`};
-    } else {
-        return {'error': true, 'result': `玩家${playerId}不可执行过动作`};
-    }
-};
 
 util.inherits(MahjongGame, Game);
 
