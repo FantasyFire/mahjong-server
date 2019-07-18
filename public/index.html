@@ -26,7 +26,7 @@
         <div id="player1" class="playerTable"></div>
         <div id="player2" class="playerTable"></div>
         <div id="player3" class="playerTable"></div>
-        <div id="player4" class=" "></div>
+        <div id="player4" class="playerTable"></div>
     </div>
 </body>
 <script>
@@ -44,11 +44,12 @@
         Pass: 1 // 过
     };
 
+    // 模拟4个玩家
     var sockets = {'player1':null,'player2':null,'player3':null,'player4':null}, 
         currentPlayerId = "", state = "", gameData = null;
     var lastGameData = null; // 缓存上一次接收的gameData
-    var jc = new JsonCompressor;
-    $(function () {
+    var jc = new JsonCompressor; // json压缩器
+    $(function () { // 模拟4个玩家登陆
         let i = 0;
         for (let playerId in sockets) {
             let pid = playerId;
@@ -96,6 +97,7 @@
         sockets[playerId].emit('login', msg);
     }
 
+    // 将玩家数据渲染到wrapper里（会清掉wrapper内已有的dom）
     function renderPlayerData(wrapper, playerData, canPlayCard) {
         let str = "";
         // TODO: player information (headImage nickname etc.)
@@ -129,6 +131,7 @@
         $(wrapper).html(str);
     }
 
+    // 渲染一张牌
     function renderCard(number, index) {
         return `
             <div class="card" ${index==undefined ? "" : `onclick="playCard(${index})"`} style="background-color:#${['f99','9f9','99f','fff','fff','fff'][number2index(number)]}">
@@ -137,6 +140,7 @@
         `;
     }
 
+    // 渲染一组牌
     function renderCardGroup(id, cards, starti) {
         cards = [].concat(cards);
         return `
@@ -146,6 +150,7 @@
         `;
     }
 
+    // 数字到文字的映射
     const type2text = {1:"万", 3:"条", 5:"筒", 7:"风", 9:"", 10:""};
     const feng2text = {0:"东", 3:"南", 6:"西", 9:"北"};
     const jian2text = {0:"中", 3:"发", 6:"白"};
@@ -183,6 +188,7 @@
         `;
     }
 
+    // 渲染动作
     function renderAction(playerId, actionCode) {
         let actionText = '', onclick = '';
         // TODO: 点击事件
@@ -204,6 +210,7 @@
         `;
     }
 
+    // 渲染玩家信息
     function renderPlayerInfo(playerData) {
         return `
             <div class="wrapper" ${currentPlayerId==playerData.id?'style="font-weight:bold;color:#f00"':''}>${playerData.id}</div>
@@ -232,10 +239,11 @@
         if (actionCode&ACTION_CODE.Gang) content = renderGangList(playerId, playerData.gangList);
         $('#'+playerId+'_actionDetail').html(content);
     }
+    // 渲染吃的选项
     function renderChiList(playerId, chiList) {
         return chiList.map((c, i) => `<div class="action-detail-group-wrapper"><div class="clickLayer" onclick="doAction('${playerId}',${ACTION_CODE.Chi},${i})"></div>${renderCardGroup(`chi_${i}`, c)}</div>`);
     }
-
+    // 渲染杠的选项
     function renderGangList(playerId, gangList) {
         return gangList.map((c, i) => `<div class="action-detail-group-wrapper"><div class="clickLayer" onclick="doAction('${playerId}',${ACTION_CODE.Gang},${i})"></div>${renderCardGroup(`gang_${i}`, c)}</div>`);
     }
