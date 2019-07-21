@@ -12,7 +12,7 @@ app.get('/', function (req, res) {
     res.sendFile(__dirname + '/public/index.html');
 });
 app.use(express.static(__dirname + '/public'));
-http.listen(3000, function () {
+http.listen(80, function () {
     console.log('http listening on port: 3000');
 });
 
