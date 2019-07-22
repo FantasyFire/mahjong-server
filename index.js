@@ -9,12 +9,14 @@ const MahjongGame = require('./js/mahjong/mahjongGame');
 
 // http
 app.get('/', function (req, res) {
-    res.sendFile(__dirname + '/public/index.html');
+    res.sendFile(__dirname + '/public/4players.html');
 });
 app.use(express.static(__dirname + '/public'));
 http.listen(80, function () {
-    console.log('http listening on port: 3000');
+    console.log('http listening on port: 80');
 });
+// user api
+app.use('/user', require('./js/user.router'));
 
 // websocket
 var room = new MahjongRoom("room1000", MahjongGame);

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>麻将游戏页</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font: 13px Helvetica, Arial; }
+        form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+        form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+        form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+        #messages { list-style-type: none; margin: 0; padding: 0; }
+        #messages li { padding: 5px 10px; }
+        #messages li:nth-child(odd) { background: #eee; }
+    </style>
+    <link rel="stylesheet" type="text/css" href='css/style.css'/>
+</head>
+<script src="lib/socket.io.js"></script>
+<script src="lib/jquery-1.11.1.js"></script>
+<script src="js/component.js"></script>
+<script src="js/gameUtils.js"></script>
+<body>
+    <div class="mahjongTable">
+        <div id="player1" class="playerTable"></div>
+        <div id="player2" class="playerTable"></div>
+        <div id="player3" class="playerTable"></div>
+        <div id="player4" class="playerTable"></div>
+    </div>
+</body>
+<script>
+    // 可执行动作码
+    const ACTION_CODE = {
+        ZiMo: 128, // 自摸
+        DianPao: 64, // 点炮
+        Hu: 192, // 胡
+        AnGang: 32, // 暗杠
+        MingGang: 16, // 明杠
+        PengHouGang: 8, // 碰后杠
+        Gang: 56, // 杠
+        Peng: 4, // 碰
+        Chi: 2, // 吃
+        Pass: 1 // 过
+    };
+
+    // 模拟4个玩家
+    var sockets = {'player1':null,'player2':null,'player3':null,'player4':null}, 
+        currentPlayerId = "", state = "", gameData = null;
+    var lastGameData = null; // 缓存上一次接收的gameData
+    var jc = new JsonCompressor; // json压缩器
+    $(function () { // 模拟4个玩家登陆
+        let i = 0;
+        for (let playerId in sockets) {
+            let pid = playerId;
+            setTimeout(function () {
+                let s = sockets[pid] = io();
+                s.on('news', onNews);
+                s.on('connect', () => login(pid));
+            }, 500*i);
+            i++;
+        }
+    });
+
+    function onNews(msg) {
+        let originLength = msg.length;
+        console.log(`收到消息：${msg}`);
+        let uncompressMsg = jc.fromCompressString(msg);
+        jc.importUncompressMap(uncompressMsg.uncompressMap);
+        delete uncompressMsg.uncompressMap;
+        let json = jc.uncompress(uncompressMsg);
+        let realMsgLength = JSON.stringify(json).length;
+        console.log(`消息解压：${JSON.stringify(json)}`);
+        console.log(`收到消息长度：${originLength}，有效信息长度：${realMsgLength}，压缩效率（(有效信息长度-收到消息长度)/有效信息长度）：${((realMsgLength-originLength)/realMsgLength*100).toFixed(2)}%`);
+        json.tableData.state == "none" && (lastGameData = null);
+        lastGameData = lastGameData || json;
+        lastGameData.tableData = json.tableData; // tableData暂时还是全量更新
+        currentPlayerId = json.tableData.currentPlayerId;
+        state = json.tableData.state;
+        gameData = json;
+        // playerData增量更新
+        for (let playerId in json.playerDatas) {
+            let wrapper = document.querySelector('#'+playerId);
+            // 将新的playerData合并到缓存的数据当中
+            let playerData = {...lastGameData.playerDatas[playerId], ...json.playerDatas[playerId]};
+            playerData.id = playerId;
+            // 特殊处理playedCards
+            playerData.playedCards = (lastGameData.playerDatas[playerId].playedCards||[]).concat(json.playerDatas[playerId].playedCards||[]);
+            lastGameData.playerDatas[playerId] = playerData; // 将合并后的playerData更新到lastGameData中
+            renderPlayerData(wrapper, playerData, playerId==currentPlayerId);
+        }
+    }
+
+    function login(playerId) {
+        let msg = JSON.stringify({playerId});
+        console.log('玩家登陆: ', msg)
+        sockets[playerId].emit('login', msg);
+    }
+
+    // 将玩家数据渲染到wrapper里（会清掉wrapper内已有的dom）
+    function renderPlayerData(wrapper, playerData, canPlayCard) {
+        let str = "";
+        // TODO: player information (headImage nickname etc.)
+        str += renderPlayerInfo(playerData);
+        // played cards
+        str += renderCardGroup('playedCards', playerData.playedCards||[]);
+        str += '<div class="wrapper">';
+            // actionDetail
+            str += renderCardGroup(playerData.id + '_actionDetail', []);
+            // playingCard
+            str += renderCardGroup('playingCard', playerData.playingCard||[]);
+            // action
+            str += renderActionCode(playerData.id, playerData.actionCode);
+        str += '</div>';
+        str += '<div class="wrapper">';
+            // TODO: 这里只处理了card，未处理from信息。数据结构：{card:[n,n,n],from:"xxxx"}
+            (playerData.groupCards||[]).forEach(gc => {
+                let cards = gc.card;
+                // TODO: 这里应详细区分各种杠
+                if (gc.actionCode&ACTION_CODE.Gang) cards = Array(4).fill(gc.card);
+                if (gc.actionCode&ACTION_CODE.Peng) cards = Array(3).fill(gc.card);
+                str += renderCardGroup('groupCards', cards);
+            });
+            // hand cards
+            str += renderCardGroup('handCards', playerData.handCards, canPlayCard ? 0 : undefined);
+            // new card
+            if (playerData.newCard) {
+                str += renderCardGroup('newCard', playerData.newCard, playerData.handCards.length);
+            }
+        str += '</div>';
+        $(wrapper).html(str);
+    }
+
+    // 渲染一张牌
+    function renderCard(number, index) {
+        return `
+            <div class="card" ${index==undefined ? "" : `onclick="playCard(${index})"`} style="background-color:#${['f99','9f9','99f','fff','fff','fff'][number2index(number)]}">
+                <div class="text">${number2text(number)}</div>
+            </div>
+        `;
+    }
+
+    // 渲染一组牌
+    function renderCardGroup(id, cards, starti) {
+        cards = [].concat(cards);
+        return `
+            <div id="${id}" class="card-group">
+                ${cards.map((n, i) => renderCard(n, starti==undefined ? undefined : starti+i)).join('')}
+            </div>
+        `;
+    }
+
+    // 数字到文字的映射
+    const type2text = {1:"万", 3:"条", 5:"筒", 7:"风", 9:"", 10:""};
+    const feng2text = {0:"东", 3:"南", 6:"西", 9:"北"};
+    const jian2text = {0:"中", 3:"发", 6:"白"};
+    function number2text(number) {
+        let type = ~~(number/10), n = number%10, text = "";
+        if (type <= 5) { // 万条筒
+            text = n;
+        } else if (type == 7) { // 风牌
+            text = feng2text[n];
+        } else if (type == 9) { // 箭牌
+            text = jian2text[n];
+        } else if (number == 100) { // 卡背
+            text = '';
+        }
+        return text + type2text[type];
+    }
+
+    // 数字映射到牌类的序号（万：0，条：1，筒：2，风：3，箭：4，卡背：5）
+    function number2index(number) {
+        return number < 30 ? 0 : number < 50 ? 1 : number < 70 ? 2 : number < 90 ? 3 : number < 100 ? 4 : 5;
+    }
+
+    // actionCode 映射 后端接受的api名
+    const actionCode2actionApi = {1:"pass", 2:"chi", 4:"peng", 8:"gang", 16:"gang", 32: "gang", 56:"gang", 64:"hu", 128:"hu", 192:"hu"};
+    const actionCode2text = {1:"过", 2:"吃", 4:"碰", 56:"杠", 192:"胡"};
+    function renderActionCode(playerId, actionCode) {
+        let actionArray = [];
+        // 解析出蕴含的actionCode
+        for (let ac in actionCode2text) (actionCode&(ac*1))!=0 && actionArray.push(actionCode&(ac*1));
+        actionArray.reverse();
+        return `
+            <div id="${playerId}_actionCodeGroup" class="action-group">
+                ${actionArray.map(ac => renderAction(playerId, ac)).join('')}
+            </div>
+        `;
+    }
+
+    // 渲染动作
+    function renderAction(playerId, actionCode) {
+        let actionText = '', onclick = '';
+        // TODO: 点击事件
+        // 吃、杠，弹出选择列表
+        if (actionCode&ACTION_CODE.Chi || actionCode&ACTION_CODE.Gang) {
+            onclick = `showActionDetail('${playerId}',${actionCode});$('#${playerId}_actionCodeGroup').html('')`;
+        } else {
+            onclick = `doAction('${playerId}',${actionCode},'')`;
+        }
+        // 找到actionCode对应的文本
+        for (let ac in actionCode2text) {
+            if ((actionCode&(ac*1))!=0) {
+                actionText = actionCode2text[ac];
+                break;
+            }
+        }
+        return `
+            <div class="action" onclick="${onclick}"><span class="action-text">${actionText}</span></div>
+        `;
+    }
+
+    // 渲染玩家信息
+    function renderPlayerInfo(playerData) {
+        return `
+            <div class="wrapper" ${currentPlayerId==playerData.id?'style="font-weight:bold;color:#f00"':''}>${playerData.id}</div>
+        `;
+    }
+
+    // 打一张牌动作请求
+    function playCard(index) {
+        let msg = JSON.stringify({playerId: currentPlayerId, action:"playCard", data:index});
+        console.log('发送消息: ', msg)
+        sockets[currentPlayerId].emit('chat message', msg);
+    }
+
+    // 发起动作请求（不包括打牌）
+    function doAction(playerId, actionCode, data) {
+        let msg = JSON.stringify({playerId, action:actionCode2actionApi[actionCode], data});
+        console.log('发送消息: ', msg)
+        sockets[playerId].emit('chat message', msg);
+    }
+
+    // 展示吃/杠选择
+    function showActionDetail(playerId, actionCode) {
+        let playerData = gameData.playerDatas[playerId];
+        let content = '';
+        if (actionCode&ACTION_CODE.Chi) content = renderChiList(playerId, playerData.chiList);
+        if (actionCode&ACTION_CODE.Gang) content = renderGangList(playerId, playerData.gangList);
+        $('#'+playerId+'_actionDetail').html(content);
+    }
+    // 渲染吃的选项
+    function renderChiList(playerId, chiList) {
+        return chiList.map((c, i) => `<div class="action-detail-group-wrapper"><div class="clickLayer" onclick="doAction('${playerId}',${ACTION_CODE.Chi},${i})"></div>${renderCardGroup(`chi_${i}`, c)}</div>`);
+    }
+    // 渲染杠的选项
+    function renderGangList(playerId, gangList) {
+        return gangList.map((c, i) => `<div class="action-detail-group-wrapper"><div class="clickLayer" onclick="doAction('${playerId}',${ACTION_CODE.Gang},${i})"></div>${renderCardGroup(`gang_${i}`, c)}</div>`);
+    }
+</script>
+</html>
