@@ -23,10 +23,6 @@
 <script src="js/gameUtils.js"></script>
 <body>
     <div class="mahjongTable">
-        <div id="player1" class="playerTable"></div>
-        <div id="player2" class="playerTable"></div>
-        <div id="player3" class="playerTable"></div>
-        <div id="player4" class="playerTable"></div>
     </div>
 </body>
 <script>
@@ -80,6 +76,12 @@
         // playerData增量更新
         for (let playerId in json.playerDatas) {
             let wrapper = document.querySelector('#'+playerId);
+            if (!wrapper) { // 找不到playerId的div，则创建一个
+                wrapper = document.createElement('div');
+                wrapper.id = playerId;
+                wrapper.classList = ['playerTable'];
+                document.querySelector('.mahjongTable').append(wrapper);
+            }
             // 将新的playerData合并到缓存的数据当中
             let playerData = {...lastGameData.playerDatas[playerId], ...json.playerDatas[playerId]};
             playerData.id = playerId;
