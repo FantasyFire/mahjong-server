@@ -27,6 +27,7 @@ var MahjongGame = function (data, config) {
     // 重置游戏变量
     // TODO: 不应该在构造的时候初始化，应该再start里初始化
     this.othersActionList = []; // 当前玩家打牌后，其他玩家的可执行动作列表
+    // TODO: 是不是真的每个玩家都要有自己的压缩工具呢？
     this.jsonCompressor = new GU.JsonCompressor; // json压缩工具
     // 重写游戏状态
     // 使用 javascript-state-machine 做状态机
@@ -48,14 +49,14 @@ var MahjongGame = function (data, config) {
                 let player = self.players[self.currentPlayerId];
                 player.drawCard(self._getTopCard());
                 // TODO: 通知更新玩家状态（整个状态）
-                self._sendToPlayer(JSON.stringify(self._getGameState()));
+                self._sendToPlayers();
             },
             onBeforePlayCard () {
                 console.log('onBeforePlayCard');
                 // 获取其他玩家可执行动作队列
                 self.othersActionList = self._retrieveOthersActionList();
                 // 先将当前玩家打牌的状态更新到客户端
-                self._sendToPlayer(JSON.stringify(self._getGameState()));
+                self._sendToPlayers();
             },
             onBeforeGang (transition, playerId) {
                 console.log('onGang');
@@ -70,7 +71,7 @@ var MahjongGame = function (data, config) {
                     self.othersActionList = [];
                     let playerData = self._updateCurrentPlayerAction();
                     // TODO: 通知更新玩家状态（整个状态）
-                    self._sendToPlayer(JSON.stringify(self._getGameState()));
+                    self._sendToPlayers();
                     console.log(`通知玩家${self.currentPlayerId}可执行动作: `, playerData.actionCode);
                 }
             },
@@ -108,7 +109,7 @@ var MahjongGame = function (data, config) {
                 self.othersActionList = [];
                 let player = self._updateCurrentPlayerAction();
                 // TODO: 通知更新玩家状态（整个状态）
-                self._sendToPlayer(JSON.stringify(self._getGameState()));
+                self._sendToPlayers();
                 console.log(`通知玩家${self.currentPlayerId}可执行动作: `, player.actionCode);
             },
             onWaitOthersAction () {
@@ -121,7 +122,7 @@ var MahjongGame = function (data, config) {
             },
             onGameOver () {
                 console.log('onGameOver');
-                self._sendToPlayer(JSON.stringify(self._getGameState()));
+                self._sendToPlayers();
                 // TODO: 这里应存储更多的房间信息
                 Log.record(self.roomId, JSON.stringify({stateHistory: self.stateHistory}));
                 // self._sendToPlayer(JSON.stringify({msg:"游戏结束"}));
@@ -478,7 +479,7 @@ p._getGameState = function (playerId, incremental = true) {
     // TODO: 玩家数据，本人数据公开，其他玩家数据屏蔽（屏蔽考虑加一个私有方法实现）
     let playerDatas = {};
     // 对于FOUR_IN_ONE模式公开所有信息，其他模式只公开自己的信息
-    this.playerSequence.forEach(pid => playerDatas[pid] = self.players[pid].getData(self.config.mode==GAME_MODE.FOUR_IN_ONE, incremental));
+    this.playerSequence.forEach(pid => playerDatas[pid] = self.players[pid].getData(self.config.mode==GAME_MODE.FOUR_IN_ONE?false:pid!=playerId, incremental));
     return {tableData, playerDatas};
 };
 
@@ -502,12 +503,13 @@ p._sendToPlayer = function (msg, playerId, fullUncompressMap = false) {
     // this.players[this.playerSequence[0]].socket.emit('news', msgCompressedStr);
 };
 
-// 通知所有玩家
+// TODO: 这个命名不合适，因为实际上这里写死了通知的是游戏状态
+// 通知多个玩家
 p._sendToPlayers = function (playerIds) {
     let self = this;
     playerIds = playerIds || self.playerSequence;
     playerIds.forEach(playerId => {
-        self._sendToPlayer(JSON.stringify(self._getGameState()), playerId);
+        self._sendToPlayer(JSON.stringify(self._getGameState(playerId)), playerId);
     });
 };
 
