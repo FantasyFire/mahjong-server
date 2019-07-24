@@ -47,10 +47,18 @@ const PLAYER_STATE = {
     GANG_LIST: 9
 }
 
+// 模式
+const GAME_MODE = {
+    DEVELOP: 1,
+    PRODUCTION: 2,
+    FOUR_IN_ONE:3 // 对应4players.html，即4人同屏
+};
+
 module.exports = {
     ACTION_CODE,
     WaitTimeLimit,
     STATE,
     CARD,
-    PLAYER_STATE
+    PLAYER_STATE,
+    GAME_MODE
 };

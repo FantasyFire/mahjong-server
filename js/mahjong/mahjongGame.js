@@ -1,5 +1,5 @@
 const GU = require('../gameUtils.js');
-const {ACTION_CODE, STATE} = require('./mahjongConstants.js');
+const {ACTION_CODE, STATE, GAME_MODE} = require('./mahjongConstants.js');
 const MahjongPlayer = require('./mahjongPlayer.js');
 const Game = require('../base/game.js');
 const util = require('util');
@@ -20,7 +20,8 @@ var MahjongGame = function (data, config) {
         needPlayerCount: 4,
         cards: [11,11,11,11,12,12,12,12,13,13,13,13,14,14,14,14,15,15,15,15,16,16,16,16,17,17,17,17,18,18,18,18,19,19,19,19,31,31,31,31,32,32,32,32,33,33,33,33,34,34,34,34,35,35,35,35,36,36,36,36,37,37,37,37,38,38,38,38,39,39,39,39,51,51,51,51,52,52,52,52,53,53,53,53,54,54,54,54,55,55,55,55,56,56,56,56,57,57,57,57,58,58,58,58,59,59,59,59,70,70,70,70,73,73,73,73,76,76,76,76,79,79,79,79,90,90,90,90,93,93,93,93,96,96,96,96],
         handCardCount: 13,
-        cheat: 6
+        cheat: 6,
+        mode: GAME_MODE.DEVELOP
     };
     this.config = Object.assign(defaultConfig, config || {});
     // 重置游戏变量
@@ -476,11 +477,12 @@ p._getGameState = function (playerId, incremental = true) {
     };
     // TODO: 玩家数据，本人数据公开，其他玩家数据屏蔽（屏蔽考虑加一个私有方法实现）
     let playerDatas = {};
-    this.playerSequence.forEach(pid => playerDatas[pid] = self.players[pid].getData(false, incremental));
+    // 对于FOUR_IN_ONE模式公开所有信息，其他模式只公开自己的信息
+    this.playerSequence.forEach(pid => playerDatas[pid] = self.players[pid].getData(self.config.mode==GAME_MODE.FOUR_IN_ONE, incremental));
     return {tableData, playerDatas};
 };
 
-// 通知玩家信息
+// 通知某玩家信息
 p._sendToPlayer = function (msg, playerId, fullUncompressMap = false) {
     Log.log(`send to ${playerId || 'all'}`, msg);
     // TODO: 这里为了方便，将msg转回JSON格式，实际应该将调用_sendToPlayer的地方的JSON.stringify都去掉
@@ -492,10 +494,22 @@ p._sendToPlayer = function (msg, playerId, fullUncompressMap = false) {
     msgJson.uncompressMap = this.jsonCompressor.exportUncompressMap(fullUncompressMap); // 导出新的解压表
     let msgCompressedStr = this.jsonCompressor.toCompressString(msgJson); // 转成压缩字符串
     // TODO: 暂时只返回给player1
-    this.players[this.playerSequence[0]].socket.emit('news', msgCompressedStr);
+    if (playerId) {
+        this.players[playerId].socket.emit('news', msgCompressedStr);
+    } else {
+        console.log('没有传入playerId');
+    }
+    // this.players[this.playerSequence[0]].socket.emit('news', msgCompressedStr);
 };
 
-
+// 通知所有玩家
+p._sendToPlayers = function (playerIds) {
+    let self = this;
+    playerIds = playerIds || self.playerSequence;
+    playerIds.forEach(playerId => {
+        self._sendToPlayer(JSON.stringify(self._getGameState()), playerId);
+    });
+};
 
 util.inherits(MahjongGame, Game);
 
