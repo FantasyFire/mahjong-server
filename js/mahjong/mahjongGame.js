@@ -49,14 +49,14 @@ var MahjongGame = function (data, config) {
                 let player = self.players[self.currentPlayerId];
                 player.drawCard(self._getTopCard());
                 // TODO: 通知更新玩家状态（整个状态）
-                self._sendToPlayers();
+                self._syncGameState();
             },
             onBeforePlayCard () {
                 console.log('onBeforePlayCard');
                 // 获取其他玩家可执行动作队列
                 self.othersActionList = self._retrieveOthersActionList();
                 // 先将当前玩家打牌的状态更新到客户端
-                self._sendToPlayers();
+                self._syncGameState();
             },
             onBeforeGang (transition, playerId) {
                 console.log('onGang');
@@ -71,7 +71,7 @@ var MahjongGame = function (data, config) {
                     self.othersActionList = [];
                     let playerData = self._updateCurrentPlayerAction();
                     // TODO: 通知更新玩家状态（整个状态）
-                    self._sendToPlayers();
+                    self._syncGameState();
                     console.log(`通知玩家${self.currentPlayerId}可执行动作: `, playerData.actionCode);
                 }
             },
@@ -109,7 +109,7 @@ var MahjongGame = function (data, config) {
                 self.othersActionList = [];
                 let player = self._updateCurrentPlayerAction();
                 // TODO: 通知更新玩家状态（整个状态）
-                self._sendToPlayers();
+                self._syncGameState();
                 console.log(`通知玩家${self.currentPlayerId}可执行动作: `, player.actionCode);
             },
             onWaitOthersAction () {
@@ -122,7 +122,7 @@ var MahjongGame = function (data, config) {
             },
             onGameOver () {
                 console.log('onGameOver');
-                self._sendToPlayers();
+                self._syncGameState();
                 // TODO: 这里应存储更多的房间信息
                 Log.record(self.roomId, JSON.stringify({stateHistory: self.stateHistory}));
                 // self._sendToPlayer(JSON.stringify({msg:"游戏结束"}));
@@ -503,14 +503,11 @@ p._sendToPlayer = function (msg, playerId, fullUncompressMap = false) {
     // this.players[this.playerSequence[0]].socket.emit('news', msgCompressedStr);
 };
 
-// TODO: 这个命名不合适，因为实际上这里写死了通知的是游戏状态
-// 通知多个玩家
-p._sendToPlayers = function (playerIds) {
+// 同步游戏状态
+p._syncGameState = function (playerIds) {
     let self = this;
     playerIds = playerIds || self.playerSequence;
-    playerIds.forEach(playerId => {
-        self._sendToPlayer(JSON.stringify(self._getGameState(playerId)), playerId);
-    });
+    playerIds.forEach(playerId => self._sendToPlayer(JSON.stringify(self._getGameState(playerId)), playerId));
 };
 
 util.inherits(MahjongGame, Game);
