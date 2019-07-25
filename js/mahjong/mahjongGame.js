@@ -164,7 +164,7 @@ p.start = async function () {
     return {'error': false, result: '游戏开始'};
 };
 // 断线重连
-// TODO: 重连对于playerId玩家来说应该是全量更新
+// TODO: 考虑以后加入玩家的是否离线状态，所以这里应该是对所有玩家进行广播
 p.reconnect = function (playerId, socket) {
     console.log(`玩家${playerId}重连`);
     this.players[playerId].socket = socket;
