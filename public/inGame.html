@@ -220,7 +220,11 @@
 
     // 打一张牌动作请求
     function playCard(index) {
-        let msg = JSON.stringify({playerId: currentPlayerId, action:"playCard", data:index});
+        if (userName != currentPlayerId) {
+            console.log('非当前玩家，不能打牌');
+            return false;
+        }
+        let msg = JSON.stringify({playerId: userName, action:"playCard", data:index});
         console.log('发送消息: ', msg)
         socket.emit('chat message', msg);
     }
