@@ -164,6 +164,7 @@ p.start = async function () {
     return {'error': false, result: '游戏开始'};
 };
 // 断线重连
+// TODO: 重连对于playerId玩家来说应该是全量更新
 p.reconnect = function (playerId, socket) {
     this.players[playerId].socket = socket;
     this._sendToPlayer(JSON.stringify(this._getGameState(playerId, false)), playerId, true);
@@ -482,7 +483,7 @@ p._getGameState = function (playerId, incremental = true) {
     let playerDatas = {};
     // 对于FOUR_IN_ONE模式公开所有信息，其他模式只公开自己的信息
     this.playerSequence.forEach(pid => playerDatas[pid] = self.players[pid].getData(self.config.mode==GAME_MODE.FOUR_IN_ONE?false:pid!=playerId, incremental));
-    return {tableData, playerDatas};
+    return {tableData, playerDatas, incremental};
 };
 
 // 通知某玩家信息
