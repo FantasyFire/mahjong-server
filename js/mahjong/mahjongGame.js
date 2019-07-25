@@ -166,6 +166,7 @@ p.start = async function () {
 // 断线重连
 // TODO: 重连对于playerId玩家来说应该是全量更新
 p.reconnect = function (playerId, socket) {
+    console.log(`玩家${playerId}重连`);
     this.players[playerId].socket = socket;
     this._sendToPlayer(JSON.stringify(this._getGameState(playerId, false)), playerId, true);
 };

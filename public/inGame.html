@@ -67,14 +67,29 @@
         let realMsgLength = JSON.stringify(json).length;
         console.log(`消息解压：${JSON.stringify(json)}`);
         console.log(`收到消息长度：${originLength}，有效信息长度：${realMsgLength}，压缩效率（(有效信息长度-收到消息长度)/有效信息长度）：${((realMsgLength-originLength)/realMsgLength*100).toFixed(2)}%`);
-        json.tableData.state == "none" && (lastGameData = null);
-        lastGameData = lastGameData || json;
-        lastGameData.tableData = json.tableData; // tableData暂时还是全量更新
+        // 合并/覆盖 新状态数据
         currentPlayerId = json.tableData.currentPlayerId;
         state = json.tableData.state;
-        gameData = json;
-        // playerData增量更新
+        if (json.incremental) { // 增量更新
+            json.tableData.state == "none" && (lastGameData = null);
+            lastGameData = lastGameData || json;
+            lastGameData.tableData = json.tableData; // tableData暂时还是全量更新
+            gameData = json;
+            // playerData增量更新
+            for (let playerId in json.playerDatas) {
+                // 将新的playerData合并到缓存的数据当中
+                let playerData = {...lastGameData.playerDatas[playerId], ...json.playerDatas[playerId]};
+                playerData.id = playerId;
+                // 特殊处理playedCards
+                playerData.playedCards = (lastGameData.playerDatas[playerId].playedCards||[]).concat(json.playerDatas[playerId].playedCards||[]);
+            }
+        } else { // 全量更新
+            gameData = lastGameData = json;
+        }
+        // 渲染数据
         for (let playerId in json.playerDatas) {
+            let playerData = json.playerDatas[playerId]
+            playerData.id = playerId;
             let wrapper = document.querySelector('#'+playerId);
             if (!wrapper) { // 找不到playerId的div，则创建一个
                 wrapper = document.createElement('div');
@@ -82,12 +97,6 @@
                 wrapper.classList = ['playerTable'];
                 document.querySelector('.mahjongTable').append(wrapper);
             }
-            // 将新的playerData合并到缓存的数据当中
-            let playerData = {...lastGameData.playerDatas[playerId], ...json.playerDatas[playerId]};
-            playerData.id = playerId;
-            // 特殊处理playedCards
-            playerData.playedCards = (lastGameData.playerDatas[playerId].playedCards||[]).concat(json.playerDatas[playerId].playedCards||[]);
-            lastGameData.playerDatas[playerId] = playerData; // 将合并后的playerData更新到lastGameData中
             renderPlayerData(wrapper, playerData, playerId==currentPlayerId);
         }
     }
