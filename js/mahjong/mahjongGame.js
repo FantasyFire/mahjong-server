@@ -28,7 +28,9 @@ var MahjongGame = function (data, config) {
     // TODO: 不应该在构造的时候初始化，应该再start里初始化
     this.othersActionList = []; // 当前玩家打牌后，其他玩家的可执行动作列表
     // TODO: 是不是真的每个玩家都要有自己的压缩工具呢？
-    this.jsonCompressor = new GU.JsonCompressor; // json压缩工具
+    this.jsonCompressors = {};
+    this.users.forEach(u => self.jsonCompressors[u.id] = new GU.JsonCompressor);
+    // this.jsonCompressor = new GU.JsonCompressor; // json压缩工具
     // 重写游戏状态
     // 使用 javascript-state-machine 做状态机
     this.fsm = new StateMachine({
@@ -485,22 +487,22 @@ p._getGameState = function (playerId, incremental = true) {
 
 // 通知某玩家信息
 p._sendToPlayer = function (msg, playerId, fullUncompressMap = false) {
-    Log.log(`send to ${playerId || 'all'}`, msg);
+    if (!playerId || !this.players[playerId]) {
+        console.log(`error: 不存在玩家 ${playerId} in MahjongGame._sendToPlayer`);
+        return false;
+    }
+    Log.log(`send to ${playerId}`, msg);
     // TODO: 这里为了方便，将msg转回JSON格式，实际应该将调用_sendToPlayer的地方的JSON.stringify都去掉
     // TODO: 到底应该先压缩再存History还是先存呢？
     let msgJson = JSON.parse(msg);
     // TODO: 不应该是这里存储历史状态的，方便测试先放这里
     this.stateHistory.push(msgJson);
-    msgJson = this.jsonCompressor.compress(msgJson); // 压缩json
-    msgJson.uncompressMap = this.jsonCompressor.exportUncompressMap(fullUncompressMap); // 导出新的解压表
-    let msgCompressedStr = this.jsonCompressor.toCompressString(msgJson); // 转成压缩字符串
-    // TODO: 暂时只返回给player1
-    if (playerId) {
-        this.players[playerId].socket.emit('news', msgCompressedStr);
-    } else {
-        console.log('没有传入playerId');
-    }
-    // this.players[this.playerSequence[0]].socket.emit('news', msgCompressedStr);
+    let jsonCompressor = this.jsonCompressors[playerId];
+    msgJson = jsonCompressor.compress(msgJson); // 压缩json
+    msgJson.uncompressMap = jsonCompressor.exportUncompressMap(fullUncompressMap); // 导出新的解压表
+    let msgCompressedStr = jsonCompressor.toCompressString(msgJson); // 转成压缩字符串
+    // 将信息传回前端
+    this.players[playerId].socket.emit('news', msgCompressedStr);
 };
 
 // 同步游戏状态
@@ -508,6 +510,8 @@ p._syncGameState = function (playerIds) {
     let self = this;
     playerIds = playerIds || self.playerSequence;
     playerIds.forEach(playerId => self._sendToPlayer(JSON.stringify(self._getGameState(playerId)), playerId));
+    // 读完数据再清理
+    playerIds.forEach(playerId => self.players[playerId].dirty.clear());
 };
 
 util.inherits(MahjongGame, Game);
